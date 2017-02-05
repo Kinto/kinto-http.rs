@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Storage Team <storage-team@mozilla.com>"]
 
 [dependencies]
+hyper = "0.10"
