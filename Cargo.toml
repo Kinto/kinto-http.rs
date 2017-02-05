@@ -1,0 +1,6 @@
+[package]
+name = "kinto-http"
+version = "0.1.0"
+authors = ["Storage Team <storage-team@mozilla.com>"]
+
+[dependencies]
