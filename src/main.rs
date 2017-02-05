@@ -1,4 +1,5 @@
 extern crate hyper;
+extern crate hyper_native_tls;
 extern crate rustc_serialize;
 
 use std::env;
@@ -6,23 +7,34 @@ use std::io::Read;
 
 use hyper::client::Client;
 use hyper::header::Connection;
+use hyper::net::HttpsConnector;
+use hyper_native_tls::NativeTlsClient;
+
 use rustc_serialize::json;
 use rustc_serialize::json::Json;
 
 
 fn main() {
-    // Prints each argument on a separate line
+    // Let's get the URL from the CLI arguments
     let args: Vec<String> = env::args().collect();
     let server_url = &args[1];
 
-    let client = Client::new();
+    // Build an SSL connector
+    let ssl = NativeTlsClient::new().unwrap();
+    let connector = HttpsConnector::new(ssl);
+
+    // Build a HTTP Client with TLS support.
+    let client = Client::with_connector(connector);
+
+    // Build a GET requests
     let mut res = client
         .get(server_url)
         .header(Connection::close())
         .send()
         .unwrap();
 
-    println!("HTTP/1.1 {}", res.status);
+    // Display the status
+    println!("{} {}", res.version, res.status);
     println!("{}", res.headers);
 
     let mut body = String::new();
