@@ -3,7 +3,16 @@ name = "kinto-http"
 version = "0.1.0"
 authors = ["Storage Team <storage-team@mozilla.com>"]
 
+[lib]
+name = "kinto_http"
+path = "src/lib.rs"
+
+[[app]]
+name = "kinto_http_run"
+path = "src/main.rs"
+
 [dependencies]
 hyper = "0.10"
 hyper-native-tls = "0.2"
+json = "0.11"
 rustc-serialize = "0.3"
