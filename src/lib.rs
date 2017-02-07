@@ -64,6 +64,42 @@ impl Client {
         }
     }
 
+    pub fn set_payload(&self, data: Option<JsonValue>,
+                       permissions: Option<JsonValue>) -> JsonValue {
+
+        let mut payload = JsonValue::new_object();
+
+        payload["data"] = data.unwrap_or(JsonValue::new_object());
+        payload["permissions"] = permissions.unwrap_or(JsonValue::new_object());
+
+        return payload;
+    }
+
+    pub fn handle_request(&self, method: Method, endpoint: String,
+                          payload: Option<JsonValue>)
+                          -> Result<JsonValue, KintoError> {
+
+        let request = self.http_client
+            .request(method, &endpoint)
+            .headers(self.headers.to_owned())
+            .body(payload.unwrap_or(JsonValue::new_object()).dump().as_str())
+            .send();
+
+        let mut response = match request {
+            Ok(response) => response,
+            Err(_) => return Err(KintoError::HyperError),
+        };
+
+        let mut body = String::new();
+        response.read_to_string(&mut body).unwrap();
+        let data = json::parse(&body);
+
+        match data {
+            Ok(response) => return Ok(response),
+            Err(_) => return Err(KintoError::JsonError),
+        };
+    }
+
     // Utilities
 
     pub fn server_info(&self) -> Result<JsonValue, KintoError> {
@@ -218,43 +254,6 @@ impl Client {
                                self.server_url, bucket_id=bucket_id, group_id=group_id);
         let payload = self.set_payload(data, permissions);
         return self.handle_request(Method::Post, endpoint, payload.into());
-    }
-
-
-    pub fn set_payload(&self, data: Option<JsonValue>,
-                       permissions: Option<JsonValue>) -> JsonValue {
-
-        let mut payload = JsonValue::new_object();
-
-        payload["data"] = data.unwrap_or(JsonValue::new_object());
-        payload["permissions"] = permissions.unwrap_or(JsonValue::new_object());
-
-        return payload;
-    }
-
-    pub fn handle_request(&self, method: Method, endpoint: String,
-                          payload: Option<JsonValue>)
-                          -> Result<JsonValue, KintoError> {
-
-        let request = self.http_client
-            .request(method, &endpoint)
-            .headers(self.headers.to_owned())
-            .body(payload.unwrap_or(JsonValue::new_object()).dump().as_str())
-            .send();
-
-        let mut response = match request {
-            Ok(response) => response,
-            Err(_) => return Err(KintoError::HyperError),
-        };
-
-        let mut body = String::new();
-        response.read_to_string(&mut body).unwrap();
-        let data = json::parse(&body);
-
-        match data {
-            Ok(response) => return Ok(response),
-            Err(_) => return Err(KintoError::JsonError),
-        };
     }
 
    // Collections
