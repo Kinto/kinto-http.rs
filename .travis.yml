@@ -14,4 +14,4 @@ cache:
 
 script:
   - cargo build --verbose $FEATURES
-  - cargo test --verbose $FEATURES
+  - cargo RUST_TEST_THREADS=1 test --verbose $FEATURES

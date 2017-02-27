@@ -1,31 +1,87 @@
 extern crate hyper;
 extern crate json;
 
-use hyper::header::{Authorization, Basic};
-
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
 
 extern crate kinto_http;
 
 
+use json::JsonValue;
+use hyper::header::{Authorization, Basic};
+use kinto_http::KintoClient;
+use kinto_http::resource::Resource;
+
+
+#[derive(Serialize, Deserialize)]
+struct Record {
+    id: String
+}
+
+
+pub fn prettyfy(data: JsonValue) -> String {
+    // Display the status
+    return json::stringify_pretty(data, 4);
+}
+
+
+/// Tutorial on how to use the client.
 fn main() {
-    // Let's get the URL from the CLI arguments
-    let args: Vec<String> = std::env::args().collect();
-    let server_url = &args[1];
+
+    //
+    // Using the client
+    //
+
+    let server_url = "http://localhost:8888/v1";
+
+    // Using Hyper authetication.
     let auth = Authorization(
         Basic {
-            username: "a".to_owned(),
-            password: Some("a".to_owned()),
+            username: "Gabi".to_owned(),
+            password: "MySecret".to_owned().into(),
         }
     );
-    let client = kinto_http::Client::new(server_url.clone(), auth);
 
-    let mut record = json::JsonValue::new_object();
-    record["id"] = "cachaca".into();
+    // Creating a client.
+    let mut client = KintoClient::new(server_url.to_owned(),
+                                      auth.into());
 
-    //let info = client.server_info();
-    let create = client.create_record("default".into(), "drinks".into(), record.into());
-    let drinks = client.get_records("default".into(), "drinks".into());
+    let mut bucket = client.bucket("buck");
+    bucket.set().unwrap();
+    bucket.load().unwrap();
+    println!("{:?}", bucket);
 
-    println!("{}", kinto_http::prettyfy(create.unwrap()));
-    println!("{}", kinto_http::prettyfy(drinks.unwrap()));
+    client.flush().unwrap();
+    // Creating a new bucket (safe).
+    //let bucket = match client.new_bucket() {
+    //    Ok(bucket) => bucket,
+    //    Err(_) => panic!("Failed to create a bucket!")
+    //};
+
+    // Creating a new bucket (unsafe).
+    //let mut bucket = client.new_bucket().unwrap();
+
+    //
+    // Using a bucket instance
+    //
+
+    // Getting a bucket from the client.
+    //let mut bucket = client.bucket("work");
+
+    // Creating the bucket if not exists.
+    //bucket.create().unwrap();
+
+    //bucket.update().unwrap();
+
+    //
+    //bucket.set().unwrap();
+    //let get_data = client.bucket("cachaca").get_data();
+    //let drinks = client.list_buckets().limit(1).send();
+    //let delete = client.delete_buckets().send();
+
+    //println!("{}", prettyfy(bucket.data.into()));
+    //println!("{}", kinto_http::prettyfy(get_data.unwrap()));
+    //println!("{}", kinto_http::prettyfy(drinks.unwrap()));
+    //println!("{}", kinto_http::prettyfy(delete.unwrap()));
 }
