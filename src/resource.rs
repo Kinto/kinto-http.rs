@@ -1,4 +1,7 @@
-use json::JsonValue;
+use serde;
+use serde_json;
+use serde_json::Value;
+use serde::{Serialize, Deserialize};
 use hyper::header::{IfMatch, IfNoneMatch};
 
 use error::KintoError;
@@ -8,17 +11,18 @@ use response::ResponseWrapper;
 use utils::timestamp_to_etag;
 
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Minimalist {
+    pub id: String,
+    pub last_modified: Option<u64>
+}
+
+
 /// Implement a Kinto core resource client.
-pub trait Resource {
+pub trait Resource: Serialize + Deserialize {
 
     /// Unwrap a request response and update the current object.
     fn unwrap_response(&mut self, wrapper: ResponseWrapper);
-
-    /// Return the object data.
-    fn get_data(&mut self) -> Option<JsonValue>;
-
-    /// Return the object permissions.
-    fn get_permissions(&mut self) -> Option<JsonValue>;
 
     /// Return the object version timestamp.
     fn get_timestamp(&mut self) -> Option<u64>;
@@ -45,8 +49,7 @@ pub trait Resource {
     /// Set current object to the server (create or update).
     fn set(&mut self) -> Result<(), KintoError> {
         let wrapper = match self.update_request()
-                                .data(self.get_data())
-                                .permissions(self.get_permissions())
+                                .body(serde_json::to_string(self).unwrap().into())
                                 .send() {
             Ok(wrapper) => wrapper,
             Err(value) => return Err(value)
@@ -58,8 +61,7 @@ pub trait Resource {
     /// Create if not exists the current object.
     fn create(&mut self) -> Result<(), KintoError> {
         let wrapper = match self.update_request()
-                                .data(self.get_data())
-                                .permissions(self.get_permissions())
+                                .body(serde_json::to_string(self).unwrap().into())
                                 .if_none_match(IfNoneMatch::Any).send() {
             Ok(wrapper) => wrapper,
             Err(value) => return Err(value)
@@ -78,8 +80,7 @@ pub trait Resource {
         };
 
         let wrapper = match self.update_request()
-                                .data(self.get_data())
-                                .permissions(self.get_permissions())
+                                .body(serde_json::to_string(self).unwrap().into())
                                 .if_match(if_match).send() {
             Ok(wrapper) => wrapper,
             Err(value) => return Err(value)

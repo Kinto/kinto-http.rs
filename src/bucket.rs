@@ -1,4 +1,5 @@
-use json::JsonValue;
+use serde_json;
+use serde_json::Value;
 
 use KintoClient;
 use error::KintoError;
@@ -11,50 +12,37 @@ use collection::Collection;
 use utils::{unwrap_collection_ids, format_permissions};
 
 
-#[derive(Debug, Clone)]
+
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct BucketPermissions {
+    #[serde(default="Vec::new")]
     pub read: Vec<String>,
+    #[serde(default="Vec::new")]
     pub write: Vec<String>,
+    #[serde(default="Vec::new", rename = "collection:create")]
     pub create_collection: Vec<String>,
+    #[serde(default="Vec::new", rename="group:create")]
     pub create_group: Vec<String>,
 }
 
 
-impl From<JsonValue> for BucketPermissions {
-    fn from(json: JsonValue) -> Self {
-        BucketPermissions {
-            read: format_permissions(json["read"]
-                                     .to_owned()),
-            write: format_permissions(json["write"]
-                                      .to_owned()),
-            create_collection: format_permissions(json["create:collection"]
-                                                  .to_owned()),
-            create_group: format_permissions(json["create:group"]
-                                             .to_owned())
-        }
-    }
-}
-
-
-impl Into<JsonValue> for BucketPermissions {
-    fn into(self) -> JsonValue {
-        let mut obj = JsonValue::new_object();
-        obj["read"] = self.read.into();
-        obj["write"] = self.write.into();
-        obj["collection:create"] = self.create_collection.into();
-        obj["group:create"] = self.create_group.into();
-        return obj;
-    }
-}
-
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Bucket {
-    pub client: KintoClient,
-    pub id: String,
-    pub timestamp: Option<u64>,
-    pub data: Option<JsonValue>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub data: Option<Value>,
+
+    #[serde(skip_serializing_if="Option::is_none")]
     pub permissions: Option<BucketPermissions>,
+
+    #[serde(skip_serializing, skip_deserializing)]
+    pub client: KintoClient,
+
+    #[serde(skip_serializing, skip_deserializing)]
+    pub id: String,
+
+    #[serde(skip_serializing, skip_deserializing)]
+    pub timestamp: Option<u64>,
 }
 
 
@@ -115,17 +103,6 @@ impl Resource for Bucket {
         *self = wrapper.into()
     }
 
-    fn get_data(&mut self) ->  Option<JsonValue> {
-        self.data.clone()
-    }
-
-    fn get_permissions(&mut self) ->  Option<JsonValue> {
-        match self.permissions.clone() {
-            Some(perms) => Some(perms.into()),
-            None => None
-        }
-    }
-
     fn get_timestamp(&mut self) -> Option<u64> {
         self.timestamp
     }
@@ -149,30 +126,18 @@ impl Resource for Bucket {
 
 impl From<ResponseWrapper> for Bucket {
     fn from(wrapper: ResponseWrapper) -> Self {
-        let timestamp = wrapper.json["data"]["last_modified"].as_number().unwrap();
+
+        let bucket: Bucket = serde_json::from_str(&wrapper.body).unwrap();
+        let data = bucket.data.clone().unwrap();
+
+        let timestamp = data["last_modified"].as_u64().unwrap();
+
         Bucket {
             client: wrapper.client,
-            data: wrapper.json["data"].to_owned().into(),
-            permissions: Some(wrapper.json["permissions"].to_owned().into()),
-            id: wrapper.json["data"]["id"].to_string(),
-            timestamp: Some(timestamp.into())
+            id: data["id"].as_str().unwrap().to_owned(),
+            timestamp: Some(timestamp.into()),
+            ..bucket
         }
-    }
-}
-
-
-impl Into<JsonValue> for Bucket {
-    fn into(self) -> JsonValue {
-        let mut obj = JsonValue::new_object();
-        match self.data {
-            Some(data) => obj["data"] = data.into(),
-            None => ()
-        }
-        match self.permissions {
-            Some(perms) => obj["permissions"] = perms.into(),
-            None => ()
-        }
-        return obj;
     }
 }
 
@@ -185,13 +150,13 @@ mod test_bucket {
     #[test]
     fn test_create_bucket() {
         let mut bucket = setup_bucket();
-        bucket.data = object!{"good" => true}.into();
+        bucket.data = json!({"good": true}).into();
 
         bucket.create().unwrap();
         let data = bucket.data.unwrap().to_owned();
 
         assert_eq!(data["id"], "food");
-        assert_eq!(data["good"], true);
+        assert_eq!(data["good"].as_bool().unwrap(), true);
     }
 
     #[test]
@@ -215,7 +180,7 @@ mod test_bucket {
         let create_data = bucket.data.clone().unwrap();
 
         // Cleanup stored data to make sure load work
-        bucket.data = object!{}.into();
+        bucket.data = json!({}).into();
 
         bucket.load().unwrap();
         let load_data = bucket.data.unwrap();
@@ -271,7 +236,8 @@ mod test_bucket {
         bucket.create().unwrap();
         let collection = bucket.new_collection().unwrap();
         assert!(collection.data != None);
-        assert_eq!(collection.id, collection.data.unwrap()["id"].to_string());
+        assert_eq!(collection.id.as_str(),
+                   collection.data.unwrap()["id"].as_str().unwrap());
     }
 
     #[test]

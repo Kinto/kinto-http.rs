@@ -1,17 +1,24 @@
 use std::collections::HashMap;
 
+use serde_json;
+use serde_json::Value;
 use hyper::header::EntityTag;
-use json::JsonValue;
 
 use response::ResponseWrapper;
 
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct List {
+    pub data: Vec<Value>
+}
+
+
 /// Get the resource ids from a collection endpoint.
 pub fn unwrap_collection_ids(wrapper: ResponseWrapper) -> Vec<String> {
-    let list = wrapper.json["data"].members();
+    let list: List = serde_json::from_str(&wrapper.body).unwrap();
     let mut ids = vec![];
-    for record in list {
-        ids.push(record["id"].to_string())
+    for record in list.data {
+        ids.push(record["id"].to_string());
     }
     return ids;
 }
@@ -48,10 +55,10 @@ pub fn extract_ids_from_path(path: String) -> HashMap<String, Option<String>> {
 }
 
 
-/// Extract a list of principals from a JsonValue entry.
-pub fn format_permissions(json: JsonValue) -> Vec<String> {
+/// Extract a list of principals from a Value entry.
+pub fn format_permissions(json: Value) -> Vec<String> {
     let mut perms = vec![];
-    for principal in json.members() {
+    for principal in json.as_array().unwrap() {
         perms.push(principal.to_string());
     }
     return perms;
@@ -64,49 +71,50 @@ pub fn format_permissions(json: JsonValue) -> Vec<String> {
 #[cfg(test)]
 pub mod tests {
 
-use hyper::header::{Authorization, Basic};
+    use hyper::header::{Authorization, Basic};
+    use serde_json::Value;
 
-use KintoClient;
-use resource::Resource;
-use bucket::Bucket;
-use collection::Collection;
-use record::Record;
-
-
-/// Create a client and clean the server.
-pub fn setup_client() -> KintoClient {
-    //let server_url = "https://kinto.dev.mozaws.net/v1".to_owned();
-    let server_url = "http://localhost:8888/v1".to_owned();
-
-    let auth = Authorization(
-        Basic {
-            username: "a".to_owned(),
-            password: Some("a".to_owned()),
-        }
-    );
-    let mut client = KintoClient::new(server_url, auth.into());
-    client.flush().unwrap();
-    return client;
-}
+    use KintoClient;
+    use resource::Resource;
+    use bucket::Bucket;
+    use collection::Collection;
+    use record::Record;
 
 
-pub fn setup_bucket() -> Bucket {
-    let mut client = setup_client();
-    return client.bucket("food");
-}
+    /// Create a client and clean the server.
+    pub fn setup_client() -> KintoClient {
+        //let server_url = "https://kinto.dev.mozaws.net/v1".to_owned();
+        let server_url = "http://localhost:8888/v1".to_owned();
+
+        let auth = Authorization(
+            Basic {
+                username: "a".to_owned(),
+                password: Some("a".to_owned()),
+            }
+        );
+        let mut client = KintoClient::new(server_url, auth.into());
+        client.flush().unwrap();
+        return client;
+    }
 
 
-pub fn setup_collection() -> Collection {
-    let mut client = setup_client();
-    client.bucket("food").set().unwrap();
-    return client.bucket("food").collection("meat");
-}
+    pub fn setup_bucket() -> Bucket {
+        let mut client = setup_client();
+        return client.bucket("food");
+    }
 
 
-pub fn setup_record() -> Record {
-    let mut client = setup_client();
-    client.bucket("food").set().unwrap();
-    client.bucket("food").collection("meat").set().unwrap();
-    return client.bucket("food").collection("meat").record("entrecote");
-}
+    pub fn setup_collection() -> Collection {
+        let mut client = setup_client();
+        client.bucket("food").set().unwrap();
+        return client.bucket("food").collection("meat");
+    }
+
+
+    pub fn setup_record() -> Record<Value> {
+        let mut client = setup_client();
+        client.bucket("food").set().unwrap();
+        client.bucket("food").collection("meat").set().unwrap();
+        return client.bucket("food").collection("meat").record("entrecote");
+    }
 }

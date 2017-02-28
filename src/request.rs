@@ -1,8 +1,9 @@
-
 use std::io::Read;
 
-use json;
-use json::JsonValue;
+use serde::Serialize;
+use serde_json;
+use serde_json::Value;
+use serde_json::Deserializer;
 use hyper::method::Method;
 use hyper::header::{Headers, IfMatch, IfNoneMatch};
 use hyper::status::StatusCode;
@@ -19,7 +20,7 @@ pub struct RequestPreparer {
     pub path: String,
     pub headers: Headers,
     pub query: String,
-    pub body: Option<JsonValue>,
+    pub body: Option<String>
 }
 
 
@@ -32,7 +33,7 @@ impl RequestPreparer {
             path: path,
             headers: Headers::new(),
             query: String::new(),
-            body: None
+            body: None,
         }
     }
 }
@@ -42,16 +43,19 @@ impl RequestPreparer {
 pub trait KintoRequest {
     fn preparer(&mut self) -> &mut RequestPreparer;
 
+    /// Set If-Match header.
     fn if_match(&mut self, if_match: IfMatch) -> &mut Self {
         self.preparer().headers.set(if_match);
         self
     }
 
+    /// Set If-None-Match header.
     fn if_none_match(&mut self, if_match: IfNoneMatch) -> &mut Self {
         self.preparer().headers.set(if_match);
         self
     }
 
+    /// Send the request.
     fn send(&mut self) -> Result<ResponseWrapper, KintoError> {
 
         // Borrow preparer mutable
@@ -69,16 +73,11 @@ pub trait KintoRequest {
             None => ()
         };
 
-        let payload = match preparer.body.to_owned() {
-            Some(data) => data.dump(),
-            None => "".to_owned()
-        };
-
         // Send prepared request
         let response = preparer.client.http_client
             .request(preparer.method.to_owned(), &full_path)
             .headers(headers)
-            .body(payload.as_str())
+            .body(preparer.body.to_owned().unwrap_or(String::new()).as_str())
             .send();
 
         let mut response = match response {
@@ -102,19 +101,13 @@ pub trait KintoRequest {
 
         let mut body = String::new();
         try!(response.read_to_string(&mut body));
-        let payload = json::parse(&body);
-
-        let payload = match payload {
-            Ok(response) => response,
-            Err(_) => return Err(KintoError::JsonError),
-        };
 
         let response = ResponseWrapper{
             client: preparer.client.to_owned(),
             path: preparer.path.to_owned(),
             status: response.status,
             headers: response.headers.to_owned(),
-            json: payload
+            body: body
         };
 
         return Ok(response);
@@ -124,40 +117,9 @@ pub trait KintoRequest {
 
 /// Implement methods used on payloded requests (POST, PUT, PATCH).
 pub trait PayloadedEndpoint: KintoRequest {
-    fn data(&mut self, data: Option<JsonValue>) -> &mut Self {
-
-        // If data is none, just return
-        let data = match data {
-            Some(data) => data,
-            None => return self
-        };
-
-        // If body is not set, create one
-        let mut body = match self.preparer().body.to_owned() {
-            Some(body) => body,
-            None => JsonValue::new_object()
-        };
-
-        body["data"] = data;
-        self.preparer().body = body.into();
-        return self;
-    }
-
-    fn permissions(&mut self, permissions: Option<JsonValue>) -> &mut Self {
-
-        let permissions = match permissions {
-            Some(perms) => perms,
-            None => return self
-        };
-
-        let mut body = match self.preparer().body.to_owned() {
-            Some(body) => body,
-            None => JsonValue::new_object()
-        };
-
-        body["permissions"] = permissions;
-        self.preparer().body = body.into();
-        return self;
+    fn body(&mut self, body: Option<String>) -> &mut Self {
+        self.preparer().body = body;
+        self
     }
 }
 
@@ -170,7 +132,9 @@ pub trait PluralEndpoint: KintoRequest {
 }
 
 /// Get request on plural endpoints.
-pub struct GetCollection {pub preparer: RequestPreparer}
+pub struct GetCollection {
+    pub preparer: RequestPreparer
+}
 
 impl GetCollection {
     pub fn new(client: KintoClient, path: String) -> GetCollection {
@@ -181,14 +145,18 @@ impl GetCollection {
 }
 
 impl KintoRequest for GetCollection {
-    fn preparer(&mut self) -> &mut RequestPreparer {&mut self.preparer}
+    fn preparer(&mut self) -> &mut RequestPreparer {
+        &mut self.preparer
+    }
 }
 
 impl PluralEndpoint for GetCollection {}
 
 
 /// Delete request on plural endpoints.
-pub struct DeleteCollection {pub preparer: RequestPreparer}
+pub struct DeleteCollection {
+    pub preparer: RequestPreparer
+}
 
 impl DeleteCollection {
     pub fn new(client: KintoClient, path: String) -> DeleteCollection {
@@ -199,13 +167,17 @@ impl DeleteCollection {
 }
 
 impl KintoRequest for DeleteCollection {
-    fn preparer(&mut self) -> &mut RequestPreparer {&mut self.preparer}
+    fn preparer(&mut self) -> &mut RequestPreparer {
+        &mut self.preparer
+    }
 }
 
 impl PluralEndpoint for DeleteCollection {}
 
 /// Create request on plural endpoints.
-pub struct CreateRecord {pub preparer: RequestPreparer}
+pub struct CreateRecord {
+    pub preparer: RequestPreparer
+}
 
 impl CreateRecord {
     pub fn new(client: KintoClient, path: String) -> CreateRecord {
@@ -216,14 +188,18 @@ impl CreateRecord {
 }
 
 impl KintoRequest for CreateRecord {
-    fn preparer(&mut self) -> &mut RequestPreparer {&mut self.preparer}
+    fn preparer(&mut self) -> &mut RequestPreparer {
+        &mut self.preparer
+    }
 }
 
 impl PayloadedEndpoint for CreateRecord {}
 
 
 /// Get request on single endpoints.
-pub struct GetRecord {pub preparer: RequestPreparer}
+pub struct GetRecord {
+    pub preparer: RequestPreparer
+}
 
 impl GetRecord {
     pub fn new(client: KintoClient, path: String) -> GetRecord {
@@ -234,11 +210,15 @@ impl GetRecord {
 }
 
 impl KintoRequest for GetRecord  {
-    fn preparer(&mut self) -> &mut RequestPreparer {&mut self.preparer}
+    fn preparer(&mut self) -> &mut RequestPreparer {
+        &mut self.preparer
+    }
 }
 
 /// Update request on single endpoints.
-pub struct UpdateRecord {pub preparer: RequestPreparer}
+pub struct UpdateRecord {
+    pub preparer: RequestPreparer
+}
 
 impl UpdateRecord {
     pub fn new(client: KintoClient, path: String) -> UpdateRecord {
@@ -256,7 +236,9 @@ impl PayloadedEndpoint for UpdateRecord {}
 
 
 /// Patch request on single endpoints.
-pub struct PatchRecord {pub preparer: RequestPreparer}
+pub struct PatchRecord {
+    pub preparer: RequestPreparer
+}
 
 impl PatchRecord {
     pub fn new(client: KintoClient, path: String) -> PatchRecord {
@@ -267,7 +249,9 @@ impl PatchRecord {
 }
 
 impl KintoRequest for PatchRecord {
-    fn preparer(&mut self) -> &mut RequestPreparer {&mut self.preparer}
+    fn preparer(&mut self) -> &mut RequestPreparer {
+        &mut self.preparer
+    }
 }
 
 impl PayloadedEndpoint for PatchRecord {}
@@ -285,5 +269,7 @@ impl DeleteRecord {
 }
 
 impl KintoRequest for DeleteRecord {
-    fn preparer(&mut self) -> &mut RequestPreparer {&mut self.preparer}
+    fn preparer(&mut self) -> &mut RequestPreparer {
+        &mut self.preparer
+    }
 }

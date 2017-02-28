@@ -1,10 +1,10 @@
 extern crate hyper;
 extern crate hyper_native_tls;
-#[macro_use]
-extern crate json;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_json;
+#[macro_use] extern crate serde;
+#[macro_use] extern crate serde_derive;
+#[macro_use] extern crate serde_json;
+#[macro_use] extern crate diesel;
+#[macro_use] extern crate diesel_codegen;
 
 
 pub mod client;

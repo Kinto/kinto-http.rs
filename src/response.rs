@@ -1,4 +1,4 @@
-use json::JsonValue;
+use serde_json::Value;
 use hyper::status::StatusCode;
 use hyper::header::Headers;
 
@@ -12,12 +12,5 @@ pub struct ResponseWrapper {
     pub path: String,
     pub status: StatusCode,
     pub headers: Headers,
-    pub json: JsonValue
-}
-
-
-impl Into<JsonValue> for ResponseWrapper {
-    fn into(self) -> JsonValue {
-        self.json
-    }
+    pub body: String
 }

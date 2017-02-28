@@ -1,9 +1,9 @@
 extern crate hyper;
-extern crate json;
+extern crate serde;
 
 use std::io::Error as IOError;
 use hyper::Error as HyperError;
-use json::Error as JsonError;
+use serde_json::error::Error as JsonError;
 
 
 #[derive(Debug)]

@@ -110,6 +110,14 @@ impl Clone for KintoClient {
 }
 
 
+impl Default for KintoClient {
+    fn default() -> KintoClient {
+        let new_client = KintoClient::new("".to_owned(), None);
+        return new_client;
+    }
+}
+
+
 #[cfg(test)]
 mod test_client {
     use utils::tests::setup_client;
@@ -127,7 +135,8 @@ mod test_client {
         let mut client = setup_client();
         let bucket = client.new_bucket().unwrap();
         assert!(bucket.data != None);
-        assert_eq!(bucket.id, bucket.data.unwrap()["id"].to_string());
+        assert_eq!(bucket.id.as_str(),
+                   bucket.data.unwrap()["id"].as_str().unwrap());
     }
 
     #[test]

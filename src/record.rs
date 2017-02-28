@@ -1,4 +1,5 @@
-use json::JsonValue;
+use serde_json;
+use serde_json::Value;
 
 use KintoClient;
 use paths::Paths;
@@ -7,18 +8,40 @@ use response::ResponseWrapper;
 use resource::Resource;
 use bucket::Bucket;
 use collection::Collection;
-use utils::{extract_ids_from_path};
+use utils::{extract_ids_from_path, format_permissions};
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct RecordPermissions {
+    #[serde(default="Vec::new")]
+    pub read: Vec<String>,
+    #[serde(default="Vec::new")]
+    pub write: Vec<String>,
+}
+
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Record {
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub data: Option<Value>,
+
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub permissions: Option<RecordPermissions>,
+
+    #[serde(skip_serializing, skip_deserializing)]
     pub client: KintoClient,
+
+    #[serde(skip_serializing, skip_deserializing)]
     pub bucket: Bucket,
+
+    #[serde(skip_serializing, skip_deserializing)]
     pub collection: Collection,
+
+    #[serde(skip_serializing, skip_deserializing)]
     pub id: String,
+
+    #[serde(skip_serializing, skip_deserializing)]
     pub timestamp: Option<u64>,
-    pub data: Option<JsonValue>,
-    pub permissions: Option<JsonValue>,
 }
 
 
@@ -43,14 +66,6 @@ impl Resource for Record {
 
     fn unwrap_response(&mut self, wrapper: ResponseWrapper){
         *self = wrapper.into()
-    }
-
-    fn get_data(&mut self) ->  Option<JsonValue> {
-        self.data.clone()
-    }
-
-    fn get_permissions(&mut self) ->  Option<JsonValue> {
-        self.permissions.clone()
     }
 
     fn get_timestamp(&mut self) -> Option<u64> {
@@ -82,8 +97,6 @@ impl Resource for Record {
 
 impl From<ResponseWrapper> for Record {
     fn from(wrapper: ResponseWrapper) -> Self {
-        let timestamp = wrapper.json["data"]["last_modified"].as_number().unwrap();
-
         let path_ids = extract_ids_from_path(wrapper.path);
 
         let bucket_id = path_ids["buckets"].clone().unwrap();
@@ -94,32 +107,18 @@ impl From<ResponseWrapper> for Record {
         let collection = Collection::new(wrapper.client.clone(),
                                          bucket.clone(),
                                          collection_id.as_str());;
+        let record: Record = serde_json::from_str(&wrapper.body).unwrap();
+        let data = record.data.clone().unwrap();
 
+        let timestamp = data["last_modified"].as_u64().unwrap();
         Record {
             client: wrapper.client,
             bucket: bucket,
             collection: collection,
-            data: wrapper.json["data"].to_owned().into(),
-            permissions: wrapper.json["permissions"].to_owned().into(),
-            id: wrapper.json["data"]["id"].to_string(),
-            timestamp: Some(timestamp.into())
+            id: data["id"].as_str().unwrap().to_owned(),
+            timestamp: Some(timestamp.into()),
+            ..record
         }
-    }
-}
-
-
-impl Into<JsonValue> for Record {
-    fn into(self) -> JsonValue {
-        let mut obj = JsonValue::new_object();
-        match self.data {
-            Some(data) => obj["data"] = data,
-            None => ()
-        }
-        match self.permissions {
-            Some(perms) => obj["permissions"] = perms,
-            None => ()
-        }
-        return obj;
     }
 }
 
@@ -132,13 +131,13 @@ mod test_record {
     #[test]
     fn test_create_record() {
         let mut record = setup_record();
-        record.data = object!{"good" => true}.into();
+        record.data = json!({"good": true}).into();
 
         record.create().unwrap();
         let data = record.data.unwrap().to_owned();
 
         assert_eq!(data["id"], "entrecote");
-        assert_eq!(data["good"], true);
+        assert_eq!(data["good"].as_bool().unwrap(), true);
     }
 
     #[test]
@@ -162,7 +161,7 @@ mod test_record {
         let create_data = record.data.clone().unwrap();
 
         // Cleanup stored data to make sure load work
-        record.data = object!{}.into();
+        record.data = json!({}).into();
 
         record.load().unwrap();
         let load_data = record.data.unwrap();
