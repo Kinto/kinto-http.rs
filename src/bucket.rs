@@ -9,9 +9,7 @@ use request::{GetCollection, DeleteCollection, GetRecord, CreateRecord,
 use response::ResponseWrapper;
 use resource::Resource;
 use collection::Collection;
-use utils::{unwrap_collection_ids, format_permissions};
-
-
+use utils::unwrap_collection_ids;
 
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

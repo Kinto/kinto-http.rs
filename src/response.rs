@@ -1,4 +1,3 @@
-use serde_json::Value;
 use hyper::status::StatusCode;
 use hyper::header::Headers;
 

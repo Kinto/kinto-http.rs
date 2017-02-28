@@ -1,9 +1,5 @@
 use std::io::Read;
 
-use serde::Serialize;
-use serde_json;
-use serde_json::Value;
-use serde_json::Deserializer;
 use hyper::method::Method;
 use hyper::header::{Headers, IfMatch, IfNoneMatch};
 use hyper::status::StatusCode;

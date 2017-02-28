@@ -1,6 +1,4 @@
-use serde;
 use serde_json;
-use serde_json::Value;
 use serde::{Serialize, Deserialize};
 use hyper::header::{IfMatch, IfNoneMatch};
 

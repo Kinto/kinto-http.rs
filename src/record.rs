@@ -8,7 +8,7 @@ use response::ResponseWrapper;
 use resource::Resource;
 use bucket::Bucket;
 use collection::Collection;
-use utils::{extract_ids_from_path, format_permissions};
+use utils::extract_ids_from_path;
 
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

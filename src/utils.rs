@@ -55,16 +55,6 @@ pub fn extract_ids_from_path(path: String) -> HashMap<String, Option<String>> {
 }
 
 
-/// Extract a list of principals from a Value entry.
-pub fn format_permissions(json: Value) -> Vec<String> {
-    let mut perms = vec![];
-    for principal in json.as_array().unwrap() {
-        perms.push(principal.to_string());
-    }
-    return perms;
-}
-
-
 // pub fn follow_subrequests(preparer: RequestPreparer) -> ResponseWrapper {}
 
 
@@ -72,7 +62,6 @@ pub fn format_permissions(json: Value) -> Vec<String> {
 pub mod tests {
 
     use hyper::header::{Authorization, Basic};
-    use serde_json::Value;
 
     use KintoClient;
     use resource::Resource;
@@ -111,7 +100,7 @@ pub mod tests {
     }
 
 
-    pub fn setup_record() -> Record<Value> {
+    pub fn setup_record() -> Record {
         let mut client = setup_client();
         client.bucket("food").set().unwrap();
         client.bucket("food").collection("meat").set().unwrap();
