@@ -1,13 +1,9 @@
 [package]
-name = "kinto-http"
+name = "kinto_http"
 version = "0.1.0"
 authors = ["Storage Team <storage-team@mozilla.com>"]
 
-[lib]
-name = "kinto_http"
-path = "src/lib.rs"
-
-[[app]]
+[app]
 name = "kinto_http_run"
 path = "src/main.rs"
 
