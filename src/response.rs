@@ -1,5 +1,6 @@
 use hyper::status::StatusCode;
 use hyper::header::Headers;
+use serde_json::Value;
 
 use KintoClient;
 
@@ -11,5 +12,5 @@ pub struct ResponseWrapper {
     pub path: String,
     pub status: StatusCode,
     pub headers: Headers,
-    pub body: String
+    pub body: Value
 }

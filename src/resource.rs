@@ -17,7 +17,7 @@ pub struct Minimalist {
 
 
 /// Implement a Kinto core resource client.
-pub trait Resource: Serialize + Deserialize {
+pub trait Resource: Serialize + Deserialize + Clone {
 
     /// Unwrap a request response and update the current object.
     fn unwrap_response(&mut self, wrapper: ResponseWrapper);
@@ -47,7 +47,7 @@ pub trait Resource: Serialize + Deserialize {
     /// Set current object to the server (create or update).
     fn set(&mut self) -> Result<(), KintoError> {
         let wrapper = match self.update_request()
-                                .body(serde_json::to_string(self).unwrap().into())
+                                .body(serde_json::to_value(self.clone()).unwrap().into())
                                 .send() {
             Ok(wrapper) => wrapper,
             Err(value) => return Err(value)
@@ -59,7 +59,7 @@ pub trait Resource: Serialize + Deserialize {
     /// Create if not exists the current object.
     fn create(&mut self) -> Result<(), KintoError> {
         let wrapper = match self.update_request()
-                                .body(serde_json::to_string(self).unwrap().into())
+                                .body(serde_json::to_value(self.clone()).unwrap().into())
                                 .if_none_match(IfNoneMatch::Any).send() {
             Ok(wrapper) => wrapper,
             Err(value) => return Err(value)
@@ -78,7 +78,7 @@ pub trait Resource: Serialize + Deserialize {
         };
 
         let wrapper = match self.update_request()
-                                .body(serde_json::to_string(self).unwrap().into())
+                                .body(serde_json::to_value(self.clone()).unwrap().into())
                                 .if_match(if_match).send() {
             Ok(wrapper) => wrapper,
             Err(value) => return Err(value)

@@ -1,5 +1,4 @@
 extern crate hyper;
-extern crate json;
 
 #[macro_use]
 extern crate serde_derive;
@@ -8,23 +7,14 @@ extern crate serde_json;
 extern crate kinto_http;
 
 
-use json::JsonValue;
 use hyper::header::{Authorization, Basic};
-use kinto_http::KintoClient;
-use kinto_http::resource::Resource;
+use kinto_http::{KintoClient, Resource};
 
 
 #[derive(Serialize, Deserialize)]
 struct Record {
     id: String
 }
-
-
-pub fn prettyfy(data: JsonValue) -> String {
-    // Display the status
-    return json::stringify_pretty(data, 4);
-}
-
 
 /// Tutorial on how to use the client.
 fn main() {

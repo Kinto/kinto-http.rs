@@ -1,7 +1,9 @@
 use std::io::Read;
 
+use serde_json;
+use serde_json::Value;
 use hyper::method::Method;
-use hyper::header::{Headers, IfMatch, IfNoneMatch};
+use hyper::header::{Headers, ContentType, IfMatch, IfNoneMatch};
 use hyper::status::StatusCode;
 
 use KintoClient;
@@ -10,19 +12,20 @@ use response::ResponseWrapper;
 
 
 /// Request builder used for setting data by specialized request methods.
+#[derive(Debug, Clone)]
 pub struct RequestPreparer {
     pub client: KintoClient,
     pub method: Method,
     pub path: String,
     pub headers: Headers,
     pub query: String,
-    pub body: Option<String>
+    pub body: Option<Value>
 }
 
 
 /// Base request data used by specialized request methods
 impl RequestPreparer {
-    fn new(client: KintoClient, path: String) -> RequestPreparer {
+    pub fn new(client: KintoClient, path: String) -> RequestPreparer {
         RequestPreparer {
             client: client,
             method: Method::Get,
@@ -69,11 +72,16 @@ pub trait KintoRequest {
             None => ()
         };
 
+        let payload = match preparer.body.clone() {
+            Some(body) => serde_json::to_string(&body).unwrap(),
+            None => "".to_owned()
+        };
+
         // Send prepared request
         let response = preparer.client.http_client
             .request(preparer.method.to_owned(), &full_path)
             .headers(headers)
-            .body(preparer.body.to_owned().unwrap_or(String::new()).as_str())
+            .body(payload.as_str())
             .send();
 
         let mut response = match response {
@@ -95,8 +103,9 @@ pub trait KintoRequest {
             return Err(KintoError::HyperError);
         }
 
-        let mut body = String::new();
-        try!(response.read_to_string(&mut body));
+        let mut serialized = String::new();
+        try!(response.read_to_string(&mut serialized));
+        let body = serde_json::from_str(&serialized).unwrap();
 
         let response = ResponseWrapper{
             client: preparer.client.to_owned(),
@@ -113,7 +122,8 @@ pub trait KintoRequest {
 
 /// Implement methods used on payloded requests (POST, PUT, PATCH).
 pub trait PayloadedEndpoint: KintoRequest {
-    fn body(&mut self, body: Option<String>) -> &mut Self {
+    fn body(&mut self, body: Option<Value>) -> &mut Self {
+        self.preparer().headers.set(ContentType::json());
         self.preparer().body = body;
         self
     }

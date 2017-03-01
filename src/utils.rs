@@ -15,7 +15,7 @@ pub struct List {
 
 /// Get the resource ids from a collection endpoint.
 pub fn unwrap_collection_ids(wrapper: ResponseWrapper) -> Vec<String> {
-    let list: List = serde_json::from_str(&wrapper.body).unwrap();
+    let list: List = serde_json::from_value(wrapper.body).unwrap();
     let mut ids = vec![];
     for record in list.data {
         ids.push(record["id"].to_string());
@@ -34,6 +34,8 @@ pub fn timestamp_to_etag(timestamp: u64) -> Vec<EntityTag> {
 /// Split a path (e.g. "/buckets/food/collections/foo") into a resource name HashMap.
 pub fn extract_ids_from_path(path: String) -> HashMap<String, Option<String>> {
 
+    // XXX: Remove version from path if exists. We shouldn't hardcode version
+    let path = path.replace("/v1", "").to_owned();
 
     // Split path into ["", "buckets", "bucket_id", ...]
     let mut split = path.split("/");
@@ -50,7 +52,6 @@ pub fn extract_ids_from_path(path: String) -> HashMap<String, Option<String>> {
         };
         map.insert(key.to_owned(), value);
     }
-    println!("{:?}", map);
     return map;
 }
 

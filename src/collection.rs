@@ -135,7 +135,7 @@ impl From<ResponseWrapper> for Collection {
         let path_ids = extract_ids_from_path(wrapper.path);
         let bucket_id = path_ids["buckets"].clone().unwrap();
 
-        let collection: Collection = serde_json::from_str(&wrapper.body).unwrap();
+        let collection: Collection = serde_json::from_value(wrapper.body).unwrap();
         let data = collection.data.clone().unwrap();
 
         let timestamp = data["last_modified"].as_u64().unwrap();

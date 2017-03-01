@@ -125,7 +125,7 @@ impl Resource for Bucket {
 impl From<ResponseWrapper> for Bucket {
     fn from(wrapper: ResponseWrapper) -> Self {
 
-        let bucket: Bucket = serde_json::from_str(&wrapper.body).unwrap();
+        let bucket: Bucket = serde_json::from_value(wrapper.body).unwrap();
         let data = bucket.data.clone().unwrap();
 
         let timestamp = data["last_modified"].as_u64().unwrap();

@@ -107,7 +107,7 @@ impl From<ResponseWrapper> for Record {
         let collection = Collection::new(wrapper.client.clone(),
                                          bucket.clone(),
                                          collection_id.as_str());;
-        let record: Record = serde_json::from_str(&wrapper.body).unwrap();
+        let record: Record = serde_json::from_value(wrapper.body).unwrap();
         let data = record.data.clone().unwrap();
 
         let timestamp = data["last_modified"].as_u64().unwrap();

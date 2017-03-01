@@ -3,6 +3,7 @@ use std::convert::Into;
 
 /// Known paths in the kinto server.
 pub enum Paths<'a> {
+    Batch(),
     Buckets(),
     Bucket(&'a str),
     Groups(&'a str),
@@ -17,6 +18,8 @@ pub enum Paths<'a> {
 impl <'a> Into <String> for Paths<'a> {
     fn into(self) -> String {
         match self {
+            Paths::Batch() =>
+                format!("/batch"),
             Paths::Buckets() =>
                 format!("/buckets"),
             Paths::Bucket(id) =>
@@ -47,6 +50,12 @@ impl <'a> Into <String> for Paths<'a> {
 #[cfg(test)]
 mod test_paths{
     use super::Paths;
+
+    #[test]
+    fn test_batch_path() {
+        let path: String = Paths::Batch().into();
+        assert_eq!(path, "/batch");
+    }
 
     #[test]
     fn test_buckets_path() {
