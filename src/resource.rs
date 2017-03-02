@@ -9,13 +9,6 @@ use response::ResponseWrapper;
 use utils::timestamp_to_etag;
 
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct Minimalist {
-    pub id: String,
-    pub last_modified: Option<u64>
-}
-
-
 /// Implement a Kinto core resource client.
 pub trait Resource: Serialize + Deserialize + Clone {
 
