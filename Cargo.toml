@@ -1,7 +1,10 @@
 [package]
 name = "kinto_http"
+description = "Rust HTTP client for the Kinto storage service."
 version = "0.1.0"
 authors = ["Storage Team <storage-team@mozilla.com>"]
+license = "Apache-2.0"
+
 
 [dependencies]
 hyper = "0.10"
