@@ -1,17 +1,34 @@
-language: rust
+language: python
 matrix:
     fast_finish: true
     include:
         - rust: nightly
+          python: 3.5
+          install:
+            - curl -L https://sh.rustup.rs | sh -s -- -y --default-toolchain=nightly
+            - source ~/.cargo/env
         - rust: beta
+          python: 3.5
+          install:
+            - curl -L https://sh.rustup.rs | sh -s -- -y --default-toolchain=beta
+            - source ~/.cargo/env
         - rust: stable
+          python: 3.5
+          install:
+            - curl -L https://sh.rustup.rs | sh -s -- -y --default-toolchain=stable
+            - source ~/.cargo/env
 
 cache:
+    pip: true
     apt: true
     directories:
         - target/debug/deps
         - target/debug/build
 
+before_install:
+    - pip install kinto
+    - kinto start --ini kinto.ini &
+
 script:
-  - cargo build --verbose $FEATURES
-  - RUST_TEST_THREADS=1 cargo test --verbose $FEATURES
+    - cargo build --verbose $FEATURES
+    - RUST_TEST_THREADS=1 cargo test --verbose $FEATURES
