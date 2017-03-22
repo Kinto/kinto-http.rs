@@ -1,8 +1,12 @@
 Kinto Rust client
 #################
 
+.. image:: https://img.shields.io/crates/v/kinto_http.svg
+    :target: https://crates.io/crates/kinto_http
+
 .. image:: https://img.shields.io/travis/Kinto/kinto-http.rs.svg
-        :target: https://travis-ci.org/Kinto/kinto-http.rs
+    :target: https://travis-ci.org/Kinto/kinto-http.rs
+
 
 
 Kinto is a service that allows users to store and synchronize
@@ -18,22 +22,41 @@ and `for Python <https://github.com/kinto/kinto-http.js>`_.
 Installation
 ============
 
-Use cargo::
+You can add kinto-http to your dependencies with cargo.
+To get the latest release::
 
-  $ cargo build
+    [dependencies]
+    kinto_http = "0.1.0"
 
 
-Run tests
-=========
+Contributing
+============
 
-In one terminal, run a Kinto server:
+Fist, clone this Github repository. You can use cargo to build the library::
 
-::
+    $ cargo build
 
-    $ make runkinto
 
-In another, run the tests against it:
+Running examples
+----------------
 
-::
+You can add and run existing examples on the `examples/` directory and run them with::
 
-    $ cargo tests
+    $ cargo run --example <example_name>
+
+.. note::
+
+    The example name should omit the .rs extension.
+
+
+Running tests
+-------------
+
+Run a Kinto server in background::
+
+    $ pip install kinto
+    $ kinto start --ini config.ini
+
+Then run the tests using cargo in a single thread::
+
+    $ RUST_TEST_THREADS=1 cargo tests --verbose
