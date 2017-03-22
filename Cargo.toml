@@ -3,11 +3,6 @@ name = "kinto_http"
 version = "0.1.0"
 authors = ["Storage Team <storage-team@mozilla.com>"]
 
-[app]
-name = "kinto_http_run"
-path = "src/main.rs"
-
-
 [dependencies]
 hyper = "0.10"
 hyper-native-tls = "0.2"
