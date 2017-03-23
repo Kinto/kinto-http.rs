@@ -93,8 +93,8 @@ impl Collection {
 
     pub fn create_record_request(&mut self) -> CreateRecord {
         CreateRecord::new(self.client.clone(),
-                           Paths::Records(self.bucket.id.as_ref().unwrap(),
-                                          self.id.as_ref().unwrap()).into())
+                          Paths::Records(self.bucket.id.as_ref().unwrap(),
+                                         self.id.as_ref().unwrap()).into())
     }
 }
 
@@ -105,6 +105,10 @@ impl Resource for Collection {
         *self = wrapper.into()
     }
 
+    fn get_id(&mut self) -> Option<String> {
+        None
+    }
+
     fn get_timestamp(&mut self) -> Option<u64> {
         self.timestamp
     }
@@ -113,7 +117,11 @@ impl Resource for Collection {
         GetRecord::new(self.client.clone(),
                        Paths::Collection(self.bucket.id.as_ref().unwrap(),
                                          self.id.as_ref().unwrap()).into())
+    }
 
+    fn create_request(&mut self) -> CreateRecord {
+        CreateRecord::new(self.client.clone(),
+                          Paths::Collections(self.bucket.id.as_ref().unwrap()).into())
     }
 
     fn update_request(&mut self) -> UpdateRecord {

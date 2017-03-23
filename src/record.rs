@@ -3,7 +3,7 @@ use serde_json::Value;
 
 use KintoClient;
 use paths::Paths;
-use request::{GetRecord, UpdateRecord, DeleteRecord};
+use request::{GetRecord, CreateRecord, UpdateRecord, DeleteRecord};
 use response::ResponseWrapper;
 use resource::Resource;
 use bucket::Bucket;
@@ -68,6 +68,10 @@ impl Resource for Record {
         *self = wrapper.into()
     }
 
+    fn get_id(&mut self) -> Option<String> {
+        None
+    }
+
     fn get_timestamp(&mut self) -> Option<u64> {
         self.timestamp
     }
@@ -77,6 +81,12 @@ impl Resource for Record {
                        Paths::Record(self.bucket.id.as_ref().unwrap(),
                                      self.collection.id.as_ref().unwrap(),
                                      self.id.as_ref().unwrap()).into())
+    }
+
+    fn create_request(&mut self) -> CreateRecord {
+        CreateRecord::new(self.client.clone(),
+                          Paths::Records(self.bucket.id.as_ref().unwrap(),
+                                        self.collection.id.as_ref().unwrap()).into())
     }
 
     fn update_request(&mut self) -> UpdateRecord {

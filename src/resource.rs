@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 use hyper::header::{IfMatch, IfNoneMatch};
 
 use error::KintoError;
-use request::{GetRecord, UpdateRecord, DeleteRecord,
+use request::{GetRecord, CreateRecord, UpdateRecord, DeleteRecord,
               KintoRequest, PayloadedEndpoint};
 use response::ResponseWrapper;
 use utils::timestamp_to_etag;
@@ -16,12 +16,18 @@ pub trait Resource: Serialize + Deserialize + Clone {
     fn unwrap_response(&mut self, wrapper: ResponseWrapper);
 
     /// Return the object version timestamp.
+    fn get_id(&mut self) -> Option<String>;
+
+    /// Return the object version timestamp.
     fn get_timestamp(&mut self) -> Option<u64>;
 
-    /// Create a custom load request for the endpoint.
+    /// create a custom load (GET) request for the endpoint.
     fn load_request(&mut self) -> GetRecord;
 
-    /// Create a custom update request for the endpoint.
+    /// create a custom create (POST) request for the endpoint.
+    fn create_request(&mut self) -> CreateRecord;
+
+    /// Create a custom update (PUT) request for the endpoint.
     fn update_request(&mut self) -> UpdateRecord;
 
     /// Create a custom delete request for the endpoint.

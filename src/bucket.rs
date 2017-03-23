@@ -101,6 +101,10 @@ impl Resource for Bucket {
         *self = wrapper.into()
     }
 
+    fn get_id(&mut self) -> Option<String> {
+        None
+    }
+
     fn get_timestamp(&mut self) -> Option<u64> {
         self.timestamp
     }
@@ -108,6 +112,11 @@ impl Resource for Bucket {
     fn load_request(&mut self) -> GetRecord {
         GetRecord::new(self.client.clone(),
                        Paths::Bucket(self.id.as_ref().unwrap()).into())
+    }
+
+    fn create_request(&mut self) -> CreateRecord {
+        CreateRecord::new(self.client.clone(),
+                          Paths::Buckets().into())
     }
 
     fn update_request(&mut self) -> UpdateRecord {
