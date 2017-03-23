@@ -39,7 +39,7 @@ pub struct Collection {
     pub bucket: Bucket,
 
     #[serde(skip_serializing, skip_deserializing)]
-    pub id: String,
+    pub id: Option<String>,
 
     #[serde(skip_serializing, skip_deserializing)]
     pub timestamp: Option<u64>,
@@ -50,11 +50,11 @@ impl Collection {
 
     /// Create a new collection resource.
     pub fn new<'a>(client: KintoClient, bucket: Bucket, id: &'a str) -> Self {
-        Collection {client: client, bucket: bucket, id: id.to_owned(),
+        Collection {client: client, bucket: bucket, id: id.to_owned().into(),
                     timestamp: None, data: None, permissions: None}
     }
 
-    pub fn record(self, id: &'static str) -> Record {
+    pub fn record<'a>(self, id: &'a str) -> Record {
         return Record::new(self.client.clone(), self, id);
     }
 
@@ -81,20 +81,20 @@ impl Collection {
 
     pub fn list_records_request(&mut self) -> GetCollection {
         GetCollection::new(self.client.clone(),
-                           Paths::Records(self.bucket.id.as_str(),
-                                          self.id.as_str()).into())
+                           Paths::Records(self.bucket.id.as_ref().unwrap(),
+                                          self.id.as_ref().unwrap()).into())
     }
 
     pub fn delete_records_request(&mut self) -> DeleteCollection {
         DeleteCollection::new(self.client.clone(),
-                           Paths::Records(self.bucket.id.as_str(),
-                                          self.id.as_str()).into())
+                           Paths::Records(self.bucket.id.as_ref().unwrap(),
+                                          self.id.as_ref().unwrap()).into())
     }
 
     pub fn create_record_request(&mut self) -> CreateRecord {
         CreateRecord::new(self.client.clone(),
-                           Paths::Records(self.bucket.id.as_str(),
-                                          self.id.as_str()).into())
+                           Paths::Records(self.bucket.id.as_ref().unwrap(),
+                                          self.id.as_ref().unwrap()).into())
     }
 }
 
@@ -111,20 +111,21 @@ impl Resource for Collection {
 
     fn load_request(&mut self) -> GetRecord {
         GetRecord::new(self.client.clone(),
-                       Paths::Collection(self.bucket.id.as_str(),
-                                         self.id.as_str()).into())
+                       Paths::Collection(self.bucket.id.as_ref().unwrap(),
+                                         self.id.as_ref().unwrap()).into())
+
     }
 
     fn update_request(&mut self) -> UpdateRecord {
         UpdateRecord::new(self.client.clone(),
-                          Paths::Collection(self.bucket.id.as_str(),
-                                            self.id.as_str()).into())
+                          Paths::Collection(self.bucket.id.as_ref().unwrap(),
+                                            self.id.as_ref().unwrap()).into())
     }
 
     fn delete_request(&mut self) -> DeleteRecord {
         DeleteRecord::new(self.client.clone(),
-                          Paths::Collection(self.bucket.id.as_str(),
-                                            self.id.as_str()).into())
+                          Paths::Collection(self.bucket.id.as_ref().unwrap(),
+                                            self.id.as_ref().unwrap()).into())
     }
 }
 
@@ -143,7 +144,7 @@ impl From<ResponseWrapper> for Collection {
         Collection {
             client: wrapper.client.clone(),
             bucket: Bucket::new(wrapper.client, bucket_id.as_str()),
-            id: data["id"].as_str().unwrap().to_owned(),
+            id: Some(data["id"].as_str().unwrap().to_owned()),
             timestamp: Some(timestamp.into()),
             ..collection
         }
@@ -235,7 +236,7 @@ mod test_client {
     fn test_get_record() {
         let collection = setup_collection();
         let record = collection.record("entrecote");
-        assert_eq!(record.id, "entrecote");
+        assert_eq!(record.id.unwrap(), "entrecote");
         assert!(record.data == None);
     }
 
@@ -245,7 +246,7 @@ mod test_client {
         collection.create().unwrap();
         let record = collection.new_record().unwrap();
         assert!(record.data != None);
-        assert_eq!(collection.id.as_str(),
+        assert_eq!(collection.id.unwrap().as_str(),
                    collection.data.unwrap()["id"].as_str().unwrap());
     }
 

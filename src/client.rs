@@ -126,7 +126,7 @@ mod test_client {
     fn test_get_bucket() {
         let mut client = setup_client();
         let bucket = client.bucket("food");
-        assert_eq!(bucket.id, "food");
+        assert_eq!(bucket.id.unwrap().as_str(), "food");
         assert!(bucket.data == None);
     }
 
@@ -135,7 +135,7 @@ mod test_client {
         let mut client = setup_client();
         let bucket = client.new_bucket().unwrap();
         assert!(bucket.data != None);
-        assert_eq!(bucket.id.as_str(),
+        assert_eq!(bucket.id.unwrap().as_str(),
                    bucket.data.unwrap()["id"].as_str().unwrap());
     }
 

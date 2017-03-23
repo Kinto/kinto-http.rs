@@ -37,7 +37,7 @@ pub struct Bucket {
     pub client: KintoClient,
 
     #[serde(skip_serializing, skip_deserializing)]
-    pub id: String,
+    pub id: Option<String>,
 
     #[serde(skip_serializing, skip_deserializing)]
     pub timestamp: Option<u64>,
@@ -47,11 +47,11 @@ pub struct Bucket {
 impl Bucket {
     /// Create a new bucket resource.
     pub fn new<'a>(client: KintoClient, id: &'a str) -> Self {
-        Bucket {client: client, id: id.to_owned(),
+        Bucket {client: client, id: id.to_owned().into(),
                 timestamp: None, data: None, permissions: None}
     }
 
-    pub fn collection(self, id: &'static str) -> Collection {
+    pub fn collection<'a>(self, id: &'a str) -> Collection {
         return Collection::new(self.client.clone(), self, id);
     }
 
@@ -79,19 +79,19 @@ impl Bucket {
     /// Create a custom list collections request.
     pub fn list_collections_request(&mut self) -> GetCollection {
         GetCollection::new(self.client.clone(),
-                           Paths::Collections(self.id.as_str()).into())
+                           Paths::Collections(self.id.as_ref().unwrap()).into())
     }
 
     /// Create a custom delete collections request.
     pub fn delete_collections_request(&mut self) -> DeleteCollection {
         DeleteCollection::new(self.client.clone(),
-                              Paths::Collections(self.id.as_str()).into())
+                              Paths::Collections(self.id.as_ref().unwrap()).into())
     }
 
     /// Create a custom create collection request.
     pub fn create_collection_request(&mut self) -> CreateRecord {
         CreateRecord::new(self.client.clone(),
-                          Paths::Collections(self.id.as_str()).into())
+                          Paths::Collections(self.id.as_ref().unwrap()).into())
     }
 }
 
@@ -107,17 +107,17 @@ impl Resource for Bucket {
 
     fn load_request(&mut self) -> GetRecord {
         GetRecord::new(self.client.clone(),
-                       Paths::Bucket(self.id.as_str()).into())
+                       Paths::Bucket(self.id.as_ref().unwrap()).into())
     }
 
     fn update_request(&mut self) -> UpdateRecord {
         UpdateRecord::new(self.client.clone(),
-                          Paths::Bucket(self.id.as_str()).into())
+                          Paths::Bucket(self.id.as_ref().unwrap()).into())
     }
 
     fn delete_request(&mut self) -> DeleteRecord {
         DeleteRecord::new(self.client.clone(),
-                          Paths::Bucket(self.id.as_str()).into())
+                          Paths::Bucket(self.id.as_ref().unwrap()).into())
     }
 }
 
@@ -132,7 +132,7 @@ impl From<ResponseWrapper> for Bucket {
 
         Bucket {
             client: wrapper.client,
-            id: data["id"].as_str().unwrap().to_owned(),
+            id: Some(data["id"].as_str().unwrap().to_owned()),
             timestamp: Some(timestamp.into()),
             ..bucket
         }
@@ -224,7 +224,7 @@ mod test_bucket {
     fn test_get_collection() {
         let bucket = setup_bucket();
         let collection = bucket.collection("meat");
-        assert_eq!(collection.id, "meat");
+        assert_eq!(collection.id.unwrap(), "meat");
         assert!(collection.data == None);
     }
 
@@ -234,7 +234,7 @@ mod test_bucket {
         bucket.create().unwrap();
         let collection = bucket.new_collection().unwrap();
         assert!(collection.data != None);
-        assert_eq!(collection.id.as_str(),
+        assert_eq!(collection.id.unwrap().as_str(),
                    collection.data.unwrap()["id"].as_str().unwrap());
     }
 

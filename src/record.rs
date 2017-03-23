@@ -38,7 +38,7 @@ pub struct Record {
     pub collection: Collection,
 
     #[serde(skip_serializing, skip_deserializing)]
-    pub id: String,
+    pub id: Option<String>,
 
     #[serde(skip_serializing, skip_deserializing)]
     pub timestamp: Option<u64>,
@@ -53,7 +53,7 @@ impl Record {
             client: client,
             bucket: collection.bucket.clone(),
             collection: collection,
-            id: id.to_owned(),
+            id: id.to_owned().into(),
             timestamp: None,
             data: None,
             permissions: None
@@ -74,23 +74,23 @@ impl Resource for Record {
 
     fn load_request(&mut self) -> GetRecord {
         GetRecord::new(self.client.clone(),
-                       Paths::Record(self.bucket.id.as_str(),
-                                     self.collection.id.as_str(),
-                                     self.id.as_str()).into())
+                       Paths::Record(self.bucket.id.as_ref().unwrap(),
+                                     self.collection.id.as_ref().unwrap(),
+                                     self.id.as_ref().unwrap()).into())
     }
 
     fn update_request(&mut self) -> UpdateRecord {
         UpdateRecord::new(self.client.clone(),
-                          Paths::Record(self.bucket.id.as_str(),
-                                        self.collection.id.as_str(),
-                                        self.id.as_str()).into())
+                          Paths::Record(self.bucket.id.as_ref().unwrap(),
+                                        self.collection.id.as_ref().unwrap(),
+                                        self.id.as_ref().unwrap()).into())
     }
 
     fn delete_request(&mut self) -> DeleteRecord {
         DeleteRecord::new(self.client.clone(),
-                          Paths::Record(self.bucket.id.as_str(),
-                                        self.collection.id.as_str(),
-                                        self.id.as_str()).into())
+                          Paths::Record(self.bucket.id.as_ref().unwrap(),
+                                        self.collection.id.as_ref().unwrap(),
+                                        self.id.as_ref().unwrap()).into())
     }
 }
 
@@ -115,7 +115,7 @@ impl From<ResponseWrapper> for Record {
             client: wrapper.client,
             bucket: bucket,
             collection: collection,
-            id: data["id"].as_str().unwrap().to_owned(),
+            id: Some(data["id"].as_str().unwrap().to_owned()),
             timestamp: Some(timestamp.into()),
             ..record
         }
