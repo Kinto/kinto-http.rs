@@ -1,4 +1,5 @@
 use serde_json;
+use serde_json::Value;
 use serde::{Serialize, Deserialize};
 use hyper::header::{IfMatch, IfNoneMatch};
 
@@ -15,23 +16,41 @@ pub trait Resource: Serialize + Deserialize + Clone {
     /// Unwrap a request response and update the current object.
     fn unwrap_response(&mut self, wrapper: ResponseWrapper);
 
-    /// Return the object version timestamp.
-    fn get_id(&mut self) -> Option<String>;
+    fn get_data(&self) -> Option<&Value>;
+
+    /// Return the object unique id.
+    fn get_id(&self) -> Option<&str> {
+        match self.get_data() {
+            Some(data) => match data["id"].as_str() {
+                Some(id) => id.into(),
+                None => None
+            },
+            None => None
+        }
+    }
 
     /// Return the object version timestamp.
-    fn get_timestamp(&mut self) -> Option<u64>;
+    fn get_timestamp(&self) -> Option<u64> {
+        match self.get_data() {
+            Some(data) => match data["lat_modified"].as_u64() {
+                Some(ts) => ts.into(),
+                None => None
+            },
+            None => None
+        }
+    }
 
     /// create a custom load (GET) request for the endpoint.
-    fn load_request(&mut self) -> GetRecord;
+    fn load_request(&self) -> GetRecord;
 
     /// create a custom create (POST) request for the endpoint.
-    fn create_request(&mut self) -> CreateRecord;
+    fn create_request(&self) -> CreateRecord;
 
     /// Create a custom update (PUT) request for the endpoint.
-    fn update_request(&mut self) -> UpdateRecord;
+    fn update_request(&self) -> UpdateRecord;
 
     /// Create a custom delete request for the endpoint.
-    fn delete_request(&mut self) -> DeleteRecord;
+    fn delete_request(&self) -> DeleteRecord;
 
     /// Load bucket by id if exists.
     fn load(&mut self) -> Result<(), KintoError> {
@@ -45,6 +64,10 @@ pub trait Resource: Serialize + Deserialize + Clone {
 
     /// Set current object to the server (create or update).
     fn set(&mut self) -> Result<(), KintoError> {
+        if self.get_id() == None {
+            return self.create();
+        }
+
         let wrapper = match self.update_request()
                                 .body(serde_json::to_value(self.clone()).unwrap().into())
                                 .send() {
@@ -57,7 +80,7 @@ pub trait Resource: Serialize + Deserialize + Clone {
 
     /// Create if not exists the current object.
     fn create(&mut self) -> Result<(), KintoError> {
-        let wrapper = match self.update_request()
+        let wrapper = match self.create_request()
                                 .body(serde_json::to_value(self.clone()).unwrap().into())
                                 .if_none_match(IfNoneMatch::Any).send() {
             Ok(wrapper) => wrapper,

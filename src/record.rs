@@ -36,26 +36,30 @@ pub struct Record {
 
     #[serde(skip_serializing, skip_deserializing)]
     pub collection: Collection,
-
-    #[serde(skip_serializing, skip_deserializing)]
-    pub id: Option<String>,
-
-    #[serde(skip_serializing, skip_deserializing)]
-    pub timestamp: Option<u64>,
 }
 
 
 impl Record {
 
-    /// Create a new record resource.
-    pub fn new<'a>(client: KintoClient, collection: Collection, id: &'a str) -> Self {
+    /// Create a new record object without an id.
+    pub fn new<'c>(client: KintoClient, collection: Collection) -> Self {
+        Record {
+            client: client,
+            bucket: collection.bucket.clone(),
+            collection: collection.clone(),
+            data: None,
+            permissions: None
+        }
+    }
+
+    /// Create a new record object with an id.
+    pub fn new_by_id<'a>(client: KintoClient, collection: Collection,
+                         id: &'a str) -> Self {
         Record {
             client: client,
             bucket: collection.bucket.clone(),
             collection: collection,
-            id: id.to_owned().into(),
-            timestamp: None,
-            data: None,
+            data: json!({"id": id}).into(),
             permissions: None
         }
     }
@@ -68,39 +72,35 @@ impl Resource for Record {
         *self = wrapper.into()
     }
 
-    fn get_id(&mut self) -> Option<String> {
-        None
+    fn get_data(&self) -> Option<&Value> {
+       self.data.as_ref()
     }
 
-    fn get_timestamp(&mut self) -> Option<u64> {
-        self.timestamp
-    }
-
-    fn load_request(&mut self) -> GetRecord {
+    fn load_request(&self) -> GetRecord {
         GetRecord::new(self.client.clone(),
-                       Paths::Record(self.bucket.id.as_ref().unwrap(),
-                                     self.collection.id.as_ref().unwrap(),
-                                     self.id.as_ref().unwrap()).into())
+                       Paths::Record(self.bucket.get_id().unwrap(),
+                                     self.collection.get_id().unwrap(),
+                                     self.get_id().unwrap()).into())
     }
 
-    fn create_request(&mut self) -> CreateRecord {
+    fn create_request(&self) -> CreateRecord {
         CreateRecord::new(self.client.clone(),
-                          Paths::Records(self.bucket.id.as_ref().unwrap(),
-                                        self.collection.id.as_ref().unwrap()).into())
+                          Paths::Records(self.bucket.get_id().unwrap(),
+                                        self.collection.get_id().unwrap()).into())
     }
 
-    fn update_request(&mut self) -> UpdateRecord {
+    fn update_request(&self) -> UpdateRecord {
         UpdateRecord::new(self.client.clone(),
-                          Paths::Record(self.bucket.id.as_ref().unwrap(),
-                                        self.collection.id.as_ref().unwrap(),
-                                        self.id.as_ref().unwrap()).into())
+                          Paths::Record(self.bucket.get_id().unwrap(),
+                                        self.collection.get_id().unwrap(),
+                                        self.get_id().unwrap()).into())
     }
 
-    fn delete_request(&mut self) -> DeleteRecord {
+    fn delete_request(&self) -> DeleteRecord {
         DeleteRecord::new(self.client.clone(),
-                          Paths::Record(self.bucket.id.as_ref().unwrap(),
-                                        self.collection.id.as_ref().unwrap(),
-                                        self.id.as_ref().unwrap()).into())
+                          Paths::Record(self.bucket.get_id().unwrap(),
+                                        self.collection.get_id().unwrap(),
+                                        self.get_id().unwrap()).into())
     }
 }
 
@@ -112,21 +112,17 @@ impl From<ResponseWrapper> for Record {
         let bucket_id = path_ids["buckets"].clone().unwrap();
         let collection_id = path_ids["collections"].clone().unwrap();
 
-        let bucket = Bucket::new(wrapper.client.clone(),
-                                 bucket_id.as_str());
-        let collection = Collection::new(wrapper.client.clone(),
-                                         bucket.clone(),
-                                         collection_id.as_str());;
+        let bucket = Bucket::new_by_id(wrapper.client.clone(),
+                                       bucket_id.as_str());
+        let collection = Collection::new_by_id(wrapper.client.clone(),
+                                               bucket.clone(),
+                                               collection_id.as_str());
         let record: Record = serde_json::from_value(wrapper.body).unwrap();
-        let data = record.data.clone().unwrap();
 
-        let timestamp = data["last_modified"].as_u64().unwrap();
         Record {
             client: wrapper.client,
             bucket: bucket,
             collection: collection,
-            id: Some(data["id"].as_str().unwrap().to_owned()),
-            timestamp: Some(timestamp.into()),
             ..record
         }
     }

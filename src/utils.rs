@@ -82,27 +82,27 @@ pub mod tests {
                 password: Some("a".to_owned()),
             }
         );
-        let mut client = KintoClient::new(server_url, auth.into());
+        let client = KintoClient::new(server_url, auth.into());
         client.flush().unwrap();
         return client;
     }
 
 
     pub fn setup_bucket() -> Bucket {
-        let mut client = setup_client();
+        let client = setup_client();
         return client.bucket("food");
     }
 
 
     pub fn setup_collection() -> Collection {
-        let mut client = setup_client();
+        let client = setup_client();
         client.bucket("food").set().unwrap();
         return client.bucket("food").collection("meat");
     }
 
 
     pub fn setup_record() -> Record {
-        let mut client = setup_client();
+        let client = setup_client();
         client.bucket("food").set().unwrap();
         client.bucket("food").collection("meat").set().unwrap();
         return client.bucket("food").collection("meat").record("entrecote");

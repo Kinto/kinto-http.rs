@@ -115,7 +115,7 @@ mod test_record {
     #[test]
     fn test_create_batch() {
         let client = setup_client();
-        let mut bucket = setup_bucket();
+        let bucket = setup_bucket();
         let mut batch = BatchRequest::new(client);
         batch.add_request(bucket.update_request());
         let result: BatchResponseWrapper = batch.send().unwrap().into();
@@ -128,7 +128,7 @@ mod test_record {
     #[test]
     fn test_add_batch_preserves_order() {
         let client = setup_client();
-        let mut bucket = setup_bucket();
+        let bucket = setup_bucket();
         let mut batch = BatchRequest::new(client);
         batch.add_request(bucket.update_request());
         batch.add_request(bucket.delete_request());

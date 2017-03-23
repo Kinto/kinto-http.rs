@@ -40,50 +40,47 @@ impl KintoClient {
     }
 
     /// Select an existing bucket.
-    pub fn bucket(&mut self, id: &'static str) -> Bucket {
+    pub fn bucket(&self, id: &'static str) -> Bucket {
         // XXX: Cloning prevents move, but there should be a better way to
         // handle this. Using references maybe?
-        Bucket::new(self.clone(), id)
+        Bucket::new_by_id(self.clone(), id)
     }
 
     /// Create a new empty bucket with a generated id.
-    pub fn new_bucket(&mut self) -> Result<Bucket, KintoError> {
-        match self.create_bucket_request().send() {
-            Ok(wrapper) => Ok(wrapper.into()),
-            Err(value) => return Err(value)
-        }
+    pub fn new_bucket(&self) -> Bucket {
+        Bucket::new(self.clone())
     }
 
     /// List the names of all available buckets.
-    pub fn list_buckets(&mut self) -> Result<Vec<String>, KintoError> {
+    pub fn list_buckets(&self) -> Result<Vec<String>, KintoError> {
         let response = try!(self.list_buckets_request().send());
         // XXX: we should follow possible subrequests
         Ok(unwrap_collection_ids(response))
     }
 
     /// Delete all available buckets.
-    pub fn delete_buckets(&mut self) -> Result<(), KintoError> {
+    pub fn delete_buckets(&self) -> Result<(), KintoError> {
         try!(self.delete_buckets_request().send());
         Ok(())
     }
 
     /// Create a custom request for a new bucket.
-    pub fn create_bucket_request(&mut self) -> CreateRecord {
+    pub fn create_bucket_request(&self) -> CreateRecord {
         CreateRecord::new(self.clone(),  Paths::Buckets().into())
     }
 
     /// Create a custom request for listing buckets.
-    pub fn list_buckets_request(&mut self) -> GetCollection {
+    pub fn list_buckets_request(&self) -> GetCollection {
         GetCollection::new(self.clone(), Paths::Buckets().into())
     }
 
     /// Create a custom request for deleting buckets.
-    pub fn delete_buckets_request(&mut self) -> DeleteCollection {
+    pub fn delete_buckets_request(&self) -> DeleteCollection {
         DeleteCollection::new(self.clone(), Paths::Buckets().into())
     }
 
     /// Flush the server (if the flush endpoint is enabled).
-    pub fn flush(&mut self) -> Result<(), KintoError> {
+    pub fn flush(&self) -> Result<(), KintoError> {
         let path = format!("{}/__flush__", self.server_url);
 
         // Set authentication headers
@@ -120,37 +117,37 @@ impl Default for KintoClient {
 
 #[cfg(test)]
 mod test_client {
+    use resource::Resource;
     use utils::tests::setup_client;
 
     #[test]
     fn test_get_bucket() {
-        let mut client = setup_client();
+        let client = setup_client();
         let bucket = client.bucket("food");
-        assert_eq!(bucket.id.unwrap().as_str(), "food");
-        assert!(bucket.data == None);
+        assert!(bucket.data != None);
+        assert_eq!(bucket.get_id().unwrap(), "food");
     }
 
     #[test]
     fn test_new_bucket() {
-        let mut client = setup_client();
-        let bucket = client.new_bucket().unwrap();
-        assert!(bucket.data != None);
-        assert_eq!(bucket.id.unwrap().as_str(),
-                   bucket.data.unwrap()["id"].as_str().unwrap());
+        let client = setup_client();
+        let bucket = client.new_bucket();
+        assert_eq!(bucket.data, None);
+        assert_eq!(bucket.get_id(), None);
     }
 
     #[test]
     fn test_list_buckets() {
-        let mut client = setup_client();
+        let client = setup_client();
         assert_eq!(client.list_buckets().unwrap().len(), 0);
-        client.new_bucket().unwrap();
+        client.new_bucket().set().unwrap();
         assert_eq!(client.list_buckets().unwrap().len(), 1);
     }
 
     #[test]
     fn test_delete_buckets() {
-        let mut client = setup_client();
-        client.new_bucket().unwrap();
+        let client = setup_client();
+        client.new_bucket().set().unwrap();
         assert_eq!(client.list_buckets().unwrap().len(), 1);
         client.delete_buckets().unwrap();
         assert_eq!(client.list_buckets().unwrap().len(), 0);
@@ -158,21 +155,21 @@ mod test_client {
 
     #[test]
     fn test_list_buckets_request() {
-        let mut client = setup_client();
+        let client = setup_client();
         let request = client.list_buckets_request();
         assert_eq!(request.preparer.path, "/buckets");
     }
 
     #[test]
     fn test_delete_buckets_request() {
-        let mut client = setup_client();
+        let client = setup_client();
         let request = client.delete_buckets_request();
         assert_eq!(request.preparer.path, "/buckets");
     }
 
     #[test]
     fn test_create_bucket_request() {
-        let mut client = setup_client();
+        let client = setup_client();
         let request = client.create_bucket_request();
         assert_eq!(request.preparer.path, "/buckets");
     }
