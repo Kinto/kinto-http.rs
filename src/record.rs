@@ -61,19 +61,19 @@ impl Resource for Record {
         self.id = Some(wrapper.body["data"]["id"].as_str().unwrap().to_owned());
     }
 
-    fn client(&self) -> KintoClient {
-        self.collection.client()
+    fn get_client(&self) -> KintoClient {
+        self.collection.get_client()
     }
 
-    fn data(&self) -> Option<Value> {
+    fn get_data(&self) -> Option<Value> {
         return self.data.clone();
     }
 
-    fn permissions(&self) -> Option<Value> {
+    fn get_permissions(&self) -> Option<Value> {
         serde_json::to_value(&(self.permissions)).unwrap_or_default().into()
     }
 
-    fn id(&self) -> Option<&str> {
+    fn get_id(&self) -> Option<&str> {
         match self.id.as_ref() {
             Some(id) => return Some(id),
             None => (),
@@ -87,8 +87,8 @@ impl Resource for Record {
         return None;
     }
 
-    fn timestamp(&self) -> Option<u64> {
-        match self.data() {
+    fn get_timestamp(&self) -> Option<u64> {
+        match self.get_data() {
             Some(data) => {
                 match data["lat_modified"].as_u64() {
                     Some(ts) => ts.into(),
@@ -110,7 +110,6 @@ mod test_record {
     fn test_create_record() {
         let mut record = setup_record();
         record.data = json!({"good": true}).into();
-        print!("{:?}", record.id());
         record.create().unwrap();
         let data = record.data.unwrap().to_owned();
 

@@ -11,6 +11,7 @@ pub enum KintoError {
     NotModified,
     PreconditionError,
     UndefinedIdError,
+    UnavailableEndpointError,
     HyperError,
     JsonError,
     IOError,

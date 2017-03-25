@@ -3,12 +3,9 @@ use serde_json::Value;
 
 use KintoClient;
 use error::KintoError;
-use paths::Paths;
-use request::{GetCollection, DeleteCollection, KintoRequest};
 use response::ResponseWrapper;
 use resource::Resource;
 use collection::Collection;
-use utils::unwrap_collection_ids;
 
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -65,27 +62,12 @@ impl Bucket {
 
     /// List the names of all available collections.
     pub fn list_collections(&self) -> Result<Vec<String>, KintoError> {
-        let response = try!(self.list_collections_request().send());
-        // XXX: we should follow possible subrequests
-        Ok(unwrap_collection_ids(response))
+        Err(KintoError::UnavailableEndpointError)
     }
 
     /// Delete all available collections.
     pub fn delete_collections(&self) -> Result<(), KintoError> {
-        try!(self.delete_collections_request().send());
-        Ok(())
-    }
-
-    /// Create a custom list collections request.
-    pub fn list_collections_request(&self) -> GetCollection {
-        GetCollection::new(self.client.clone(),
-                           Paths::Collections(self.id().unwrap()).into())
-    }
-
-    /// Create a custom delete collections request.
-    pub fn delete_collections_request(&self) -> DeleteCollection {
-        DeleteCollection::new(self.client.clone(),
-                              Paths::Collections(self.id().unwrap()).into())
+        Err(KintoError::UnavailableEndpointError)
     }
 }
 
@@ -102,11 +84,11 @@ impl Resource for Bucket {
         self.id = Some(wrapper.body["data"]["id"].as_str().unwrap().to_owned());
     }
 
-    fn client(&self) -> KintoClient {
+    fn get_client(&self) -> KintoClient {
         self.client.clone()
     }
 
-    fn id(&self) -> Option<&str> {
+    fn get_id(&self) -> Option<&str> {
         // Try to get id from class
         match self.id.as_ref() {
             Some(id) => Some(id),
@@ -121,8 +103,8 @@ impl Resource for Bucket {
         }
     }
 
-    fn timestamp(&self) -> Option<u64> {
-        match self.data() {
+    fn get_timestamp(&self) -> Option<u64> {
+        match self.get_data() {
             Some(data) => {
                 match data["lat_modified"].as_u64() {
                     Some(ts) => ts.into(),
@@ -133,11 +115,11 @@ impl Resource for Bucket {
         }
     }
 
-    fn data(&self) -> Option<Value> {
+    fn get_data(&self) -> Option<Value> {
         return self.data.clone();
     }
 
-    fn permissions(&self) -> Option<Value> {
+    fn get_permissions(&self) -> Option<Value> {
         serde_json::to_value(&(self.permissions)).unwrap_or_default().into()
     }
 }
@@ -285,7 +267,7 @@ mod test_bucket_class {
     fn test_get_collection() {
         let bucket = setup_bucket();
         let collection = bucket.collection("meat");
-        assert_eq!(collection.id().unwrap(), "meat");
+        assert_eq!(collection.get_id().unwrap(), "meat");
         assert_eq!(collection.data, None);
     }
 
@@ -294,40 +276,6 @@ mod test_bucket_class {
         let bucket = setup_bucket();
         let collection = bucket.new_collection();
         assert_eq!(collection.data, None);
-        assert_eq!(collection.id(), None);
-    }
-
-    #[test]
-    fn test_list_collections() {
-        let mut bucket = setup_bucket();
-        bucket.create().unwrap();
-        assert_eq!(bucket.list_collections().unwrap().len(), 0);
-        let mut collection = bucket.new_collection();
-        collection.set().unwrap();
-        assert_eq!(bucket.list_collections().unwrap().len(), 1);
-    }
-
-    #[test]
-    fn test_delete_collections() {
-        let mut bucket = setup_bucket();
-        bucket.create().unwrap();
-        bucket.new_collection().set().unwrap();
-        assert_eq!(bucket.list_collections().unwrap().len(), 1);
-        bucket.delete_collections().unwrap();
-        assert_eq!(bucket.list_collections().unwrap().len(), 0);
-    }
-
-    #[test]
-    fn test_list_collections_request() {
-        let bucket = setup_bucket();
-        let request = bucket.list_collections_request();
-        assert_eq!(request.preparer.path, "/buckets/food/collections");
-    }
-
-    #[test]
-    fn test_delete_collections_request() {
-        let bucket = setup_bucket();
-        let request = bucket.delete_collections_request();
-        assert_eq!(request.preparer.path, "/buckets/food/collections");
+        assert_eq!(collection.get_id(), None);
     }
 }

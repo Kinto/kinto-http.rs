@@ -33,7 +33,7 @@ fn main() {
 
     // Get the created record by id
     let mut get_record =
-        client.bucket("default").collection("notes").record(new_record.id().unwrap());
+        client.bucket("default").collection("notes").record(new_record.get_id().unwrap());
 
     // Get the record from the server or panic if fails
     get_record.load().unwrap();
