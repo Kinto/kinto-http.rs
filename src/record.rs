@@ -5,7 +5,6 @@ use KintoClient;
 use error::KintoError;
 use response::ResponseWrapper;
 use resource::Resource;
-use bucket::Bucket;
 use collection::Collection;
 
 
@@ -22,8 +21,6 @@ pub struct RecordPermissions {
 pub struct Record {
     pub data: Option<Value>,
     pub permissions: RecordPermissions,
-    pub client: KintoClient,
-    pub bucket: Bucket,
     pub collection: Collection,
     pub id: Option<String>
 }
@@ -32,10 +29,8 @@ pub struct Record {
 impl Record {
 
     /// Create a new record object without an id.
-    pub fn new<'c>(client: KintoClient, collection: Collection) -> Self {
+    pub fn new<'c>(collection: Collection) -> Self {
         Record {
-            client: client,
-            bucket: collection.bucket.clone(),
             collection: collection.clone(),
             data: None,
             permissions: RecordPermissions::default(),
@@ -44,11 +39,9 @@ impl Record {
     }
 
     /// Create a new record object with an id.
-    pub fn new_by_id<'a>(client: KintoClient, collection: Collection,
+    pub fn new_by_id<'a>(collection: Collection,
                          id: &'a str) -> Self {
         Record {
-            client: client,
-            bucket: collection.bucket.clone(),
             collection: collection,
             data: None,
             permissions: RecordPermissions::default(),
@@ -75,7 +68,7 @@ impl Resource for Record {
     }
 
     fn client(&self) -> KintoClient {
-        self.client.clone()
+        self.collection.client()
     }
 
     fn data(&self) -> Option<Value> {

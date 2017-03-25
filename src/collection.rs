@@ -27,7 +27,6 @@ pub struct CollectionPermissions {
 pub struct Collection {
     pub data: Option<Value>,
     pub permissions: CollectionPermissions,
-    pub client: KintoClient,
     pub bucket: Bucket,
     pub id: Option<String>
 }
@@ -36,9 +35,8 @@ pub struct Collection {
 impl Collection {
 
     /// Create a new collection resource.
-    pub fn new(client: KintoClient, bucket: Bucket) -> Self {
+    pub fn new(bucket: Bucket) -> Self {
         Collection {
-            client: client,
             bucket: bucket,
             id: None,
             data: None,
@@ -47,9 +45,8 @@ impl Collection {
     }
 
     /// Create a new collection resource.
-    pub fn new_by_id<'a>(client: KintoClient, bucket: Bucket, id: &'a str) -> Self {
+    pub fn new_by_id<'a>(bucket: Bucket, id: &'a str) -> Self {
         Collection {
-            client: client,
             bucket: bucket,
             id: Some(id.to_owned()),
             data: None,
@@ -58,12 +55,12 @@ impl Collection {
     }
 
     pub fn record<'a>(&self, id: &'a str) -> Record {
-        return Record::new_by_id(self.client.clone(), self.clone(), id);
+        return Record::new_by_id(self.clone(), id);
     }
 
     /// Create a new empty record with a generated id.
     pub fn new_record(&self) -> Record {
-        return Record::new(self.client.clone(), self.clone());
+        return Record::new(self.clone());
     }
 
     /// List the names of all available records.
@@ -80,13 +77,13 @@ impl Collection {
     }
 
     pub fn list_records_request(&self) -> GetCollection {
-        GetCollection::new(self.client.clone(),
+        GetCollection::new(self.client(),
                            Paths::Records(self.bucket.id().unwrap(),
                                           self.id().unwrap()).into())
     }
 
     pub fn delete_records_request(&self) -> DeleteCollection {
-        DeleteCollection::new(self.client.clone(),
+        DeleteCollection::new(self.client(),
                            Paths::Records(self.bucket.id().unwrap(),
                                           self.id().unwrap()).into())
     }
@@ -111,7 +108,7 @@ impl Resource for Collection {
     }
 
     fn client(&self) -> KintoClient {
-        self.client.clone()
+        self.bucket.client()
     }
 
     fn id(&self) -> Option<&str> {

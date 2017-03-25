@@ -28,7 +28,6 @@ pub struct BucketPermissions {
 pub struct Bucket {
     pub data: Option<Value>,
     pub permissions: BucketPermissions,
-
     pub client: KintoClient,
     pub id: Option<String>
 }
@@ -56,12 +55,12 @@ impl Bucket {
 
     /// Get a collection by id.
     pub fn collection<'a>(self, id: &'a str) -> Collection {
-        return Collection::new_by_id(self.client.clone(), self, id);
+        return Collection::new_by_id(self, id);
     }
 
     /// Get an empty collection.
     pub fn new_collection(&self) -> Collection {
-        return Collection::new(self.client.clone(), self.clone());
+        return Collection::new(self.clone());
     }
 
     /// List the names of all available collections.
