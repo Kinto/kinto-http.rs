@@ -40,7 +40,7 @@ impl KintoClient {
     }
 
     /// Select an existing bucket.
-    pub fn bucket(&self, id: &'static str) -> Bucket {
+    pub fn bucket<'a>(&self, id: &'a str) -> Bucket {
         // XXX: Cloning prevents move, but there should be a better way to
         // handle this. Using references maybe?
         Bucket::new_by_id(self.clone(), id)
@@ -124,8 +124,8 @@ mod test_client {
     fn test_get_bucket() {
         let client = setup_client();
         let bucket = client.bucket("food");
-        assert!(bucket.data != None);
-        assert_eq!(bucket.get_id().unwrap(), "food");
+        assert_eq!(bucket.data, None);
+        assert_eq!(bucket.id().unwrap(), "food");
     }
 
     #[test]
@@ -133,7 +133,7 @@ mod test_client {
         let client = setup_client();
         let bucket = client.new_bucket();
         assert_eq!(bucket.data, None);
-        assert_eq!(bucket.get_id(), None);
+        assert_eq!(bucket.id(), None);
     }
 
     #[test]

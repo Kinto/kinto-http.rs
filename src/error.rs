@@ -10,6 +10,7 @@ use serde_json::error::Error as JsonError;
 pub enum KintoError {
     NotModified,
     PreconditionError,
+    UndefinedIdError,
     HyperError,
     JsonError,
     IOError

@@ -4,8 +4,7 @@ use serde_json::Value;
 use KintoClient;
 use error::KintoError;
 use paths::Paths;
-use request::{GetCollection, DeleteCollection, GetRecord, CreateRecord,
-              UpdateRecord, DeleteRecord, KintoRequest};
+use request::{GetCollection, DeleteCollection, KintoRequest};
 use response::ResponseWrapper;
 use resource::Resource;
 use collection::Collection;
@@ -14,27 +13,24 @@ use utils::unwrap_collection_ids;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct BucketPermissions {
-    #[serde(default="Vec::new")]
-    pub read: Vec<String>,
-    #[serde(default="Vec::new")]
-    pub write: Vec<String>,
-    #[serde(default="Vec::new", rename = "collection:create")]
-    pub create_collection: Vec<String>,
-    #[serde(default="Vec::new", rename="group:create")]
-    pub create_group: Vec<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub read: Option<Vec<String>>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub write: Option<Vec<String>>,
+    #[serde(skip_serializing_if="Option::is_none", rename="collection:create")]
+    pub create_collection: Option<Vec<String>>,
+    #[serde(skip_serializing_if="Option::is_none", rename="group:create")]
+    pub create_group: Option<Vec<String>>,
 }
 
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default)]
 pub struct Bucket {
-    #[serde(skip_serializing_if="Option::is_none")]
     pub data: Option<Value>,
+    pub permissions: BucketPermissions,
 
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub permissions: Option<BucketPermissions>,
-
-    #[serde(skip_serializing, skip_deserializing)]
     pub client: KintoClient,
+    pub id: Option<String>
 }
 
 
@@ -44,15 +40,17 @@ impl Bucket {
         Bucket {
             client: client,
             data: None,
-            permissions: None
+            permissions: BucketPermissions::default(),
+            id: None
         }
     }
 
     pub fn new_by_id<'a>(client: KintoClient, id: &'a str) -> Self {
         Bucket {
             client: client,
-            data: json!({"id": id}).into(),
-            permissions: None
+            data: None,
+            permissions: BucketPermissions::default(),
+            id: Some(id.to_owned())
         }
     }
 
@@ -82,96 +80,108 @@ impl Bucket {
     /// Create a custom list collections request.
     pub fn list_collections_request(&self) -> GetCollection {
         GetCollection::new(self.client.clone(),
-                           Paths::Collections(self.get_id().unwrap()).into())
+                           Paths::Collections(self.id().unwrap()).into())
     }
 
     /// Create a custom delete collections request.
     pub fn delete_collections_request(&self) -> DeleteCollection {
         DeleteCollection::new(self.client.clone(),
-                              Paths::Collections(self.get_id().unwrap()).into())
-    }
-
-    /// Create a custom create collection request.
-    pub fn create_collection_request(&self) -> CreateRecord {
-        CreateRecord::new(self.client.clone(),
-                          Paths::Collections(self.get_id().unwrap()).into())
+                              Paths::Collections(self.id().unwrap()).into())
     }
 }
 
 
 impl Resource for Bucket {
+
+    fn resource_path(&self) -> Result<String, KintoError> {
+        Ok(format!("/buckets"))
+    }
+
     fn unwrap_response(&mut self, wrapper: ResponseWrapper){
-        *self = wrapper.into()
+        self.data = Some(wrapper.body["data"]
+                                .to_owned());
+        self.permissions = serde_json::from_value(wrapper.body["permissions"]
+                                                         .to_owned()).unwrap();
+        self.id = Some(wrapper.body["data"]["id"].as_str()
+                                                 .unwrap()
+                                                 .to_owned());
     }
 
-    fn get_data(&self) -> Option<&Value> {
-       self.data.as_ref()
+    fn client(&self) -> KintoClient{
+        self.client.clone()
     }
 
-    fn load_request(&self) -> GetRecord {
-        GetRecord::new(self.client.clone(),
-                       Paths::Bucket(self.get_id().unwrap()).into())
-    }
+    fn id(&self) -> Option<&str> {
+        // Try to get id from class
+        match self.id.as_ref() {
+            Some(id) => Some(id),
 
-    fn create_request(&self) -> CreateRecord {
-        CreateRecord::new(self.client.clone(),
-                          Paths::Buckets().into())
-    }
-
-    fn update_request(&self) -> UpdateRecord {
-        UpdateRecord::new(self.client.clone(),
-                          Paths::Bucket(self.get_id().unwrap()).into())
-    }
-
-    fn delete_request(&self) -> DeleteRecord {
-        DeleteRecord::new(self.client.clone(),
-                          Paths::Bucket(self.get_id().unwrap()).into())
-    }
-}
-
-
-impl From<ResponseWrapper> for Bucket {
-    fn from(wrapper: ResponseWrapper) -> Self {
-
-        let bucket: Bucket = serde_json::from_value(wrapper.body).unwrap();
-
-        Bucket {
-            client: wrapper.client,
-            ..bucket
+            // If none, try to get id from body
+            None => match self.data.as_ref() {
+                Some(data) => data["id"].as_str(),
+                None => None,
+            }
         }
+    }
+
+    fn timestamp(&self) -> Option<u64> {
+        match self.data() {
+            Some(data) => match data["lat_modified"].as_u64() {
+                Some(ts) => ts.into(),
+                None => None
+            },
+            None => None
+        }
+    }
+
+    fn data(&self) -> Option<Value> {
+        return self.data.clone();
+    }
+
+    fn permissions(&self) -> Option<Value> {
+        serde_json::to_value(&(self.permissions)).unwrap_or_default().into()
     }
 }
 
 
 #[cfg(test)]
-mod test_bucket {
+mod test_bucket_resource {
     use utils::tests::{setup_client, setup_bucket};
     use resource::Resource;
+    use bucket::BucketPermissions;
+
+    #[test]
+    fn test_set_bucket() {
+        let mut bucket = setup_bucket();
+        bucket.set().unwrap();
+        let data = bucket.data.unwrap().to_owned();
+        assert_eq!(data["id"], "food");
+    }
+
+    #[test]
+    fn test_set_bucket_without_id() {
+        let mut bucket = setup_bucket();
+        bucket.id = None;
+        bucket.set().unwrap();
+        let data = bucket.data.unwrap().to_owned();
+        assert!(data["id"].as_str() != None);
+    }
 
     #[test]
     fn test_create_bucket() {
         let mut bucket = setup_bucket();
-        bucket.data = json!({"good": true}).into();
-
         bucket.create().unwrap();
         let data = bucket.data.unwrap().to_owned();
-
         assert_eq!(data["id"], "food");
-        assert_eq!(data["good"].as_bool().unwrap(), true);
     }
 
     #[test]
-    fn test_create_bucket_fails_on_existing() {
+    fn test_create_bucket_without_id() {
         let mut bucket = setup_bucket();
-
-        // Create
-        bucket.create().unwrap();
-
-        // Tries to create again
-        match bucket.create() {
-            Ok(_) => panic!(""),
-            Err(_) => ()
-        }
+        bucket.id = None;
+        bucket.set().unwrap();
+        let data = bucket.data.unwrap().to_owned();
+        assert!(data["id"].as_str() != None);
     }
 
     #[test]
@@ -186,17 +196,62 @@ mod test_bucket {
         bucket.load().unwrap();
         let load_data = bucket.data.unwrap();
 
-
         assert_eq!(create_data, load_data);
+    }
+
+    #[test]
+    fn test_create_bucket_with_data() {
+        let mut bucket = setup_bucket();
+        bucket.data = json!({"good": true}).into();
+        bucket.create().unwrap();
+        let data = bucket.data.unwrap().to_owned();
+        assert_eq!(data["good"].as_bool().unwrap(), true);
+    }
+
+    #[test]
+    fn test_set_bucket_permissions() {
+        let mut bucket = setup_bucket();
+        let principals = Some(vec!["bob".to_owned()]);
+
+        bucket.permissions.read = principals.clone();
+        bucket.permissions.write = principals.clone();
+        bucket.permissions.create_group = principals.clone();
+        bucket.permissions.create_collection = principals.clone();
+
+        bucket.set().unwrap();
+        bucket.permissions = BucketPermissions::default();
+
+        bucket.load().unwrap();
+        let permissions = bucket.permissions;
+
+        assert_eq!(permissions.read.unwrap()[0], "bob");
+        assert_eq!(permissions.create_group.unwrap()[0], "bob");
+        assert_eq!(permissions.create_collection.unwrap()[0], "bob");
+        assert_eq!(permissions.write.unwrap().len(), 2);
+    }
+
+    #[test]
+    fn test_load_bucket_fails_without_id() {
+        let mut bucket = setup_bucket();
+        bucket.id = None;
+        bucket.load().unwrap_err();
+    }
+
+    #[test]
+    fn test_create_bucket_fails_on_existing() {
+        let mut bucket = setup_bucket();
+
+        // Create
+        bucket.create().unwrap();
+
+        // Tries to create again
+        bucket.create().unwrap_err();
     }
 
     #[test]
     fn test_load_bucket_fails_on_not_existing() {
         let mut bucket = setup_bucket();
-        match bucket.load() {
-            Ok(_) => panic!(""),
-            Err(_) => ()
-        }
+        bucket.load().unwrap_err();
     }
 
     #[test]
@@ -217,18 +272,22 @@ mod test_bucket {
     fn test_update_bucket_fails_on_not_existing() {
         let client = setup_client();
         let mut bucket = client.bucket("food");
-        match bucket.update() {
-            Ok(_) => panic!(""),
-            Err(_) => ()
-        }
+        bucket.update().unwrap_err();
     }
+}
+
+
+#[cfg(test)]
+mod test_bucket_class {
+    use utils::tests::{setup_bucket};
+    use resource::Resource;
 
     #[test]
     fn test_get_collection() {
         let bucket = setup_bucket();
         let collection = bucket.collection("meat");
-        assert_eq!(collection.get_id().unwrap(), "meat");
-        assert!(collection.data != None);
+        assert_eq!(collection.id().unwrap(), "meat");
+        assert_eq!(collection.data, None);
     }
 
     #[test]
@@ -236,7 +295,7 @@ mod test_bucket {
         let bucket = setup_bucket();
         let collection = bucket.new_collection();
         assert_eq!(collection.data, None);
-        assert_eq!(collection.get_id(), None);
+        assert_eq!(collection.id(), None);
     }
 
     #[test]
@@ -270,13 +329,6 @@ mod test_bucket {
     fn test_delete_collections_request() {
         let bucket = setup_bucket();
         let request = bucket.delete_collections_request();
-        assert_eq!(request.preparer.path, "/buckets/food/collections");
-    }
-
-    #[test]
-    fn test_create_collection_request() {
-        let bucket = setup_bucket();
-        let request = bucket.create_collection_request();
         assert_eq!(request.preparer.path, "/buckets/food/collections");
     }
 }

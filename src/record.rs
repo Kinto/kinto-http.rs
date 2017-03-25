@@ -2,40 +2,30 @@ use serde_json;
 use serde_json::Value;
 
 use KintoClient;
-use paths::Paths;
-use request::{GetRecord, CreateRecord, UpdateRecord, DeleteRecord};
+use error::KintoError;
 use response::ResponseWrapper;
 use resource::Resource;
 use bucket::Bucket;
 use collection::Collection;
-use utils::extract_ids_from_path;
 
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RecordPermissions {
-    #[serde(default="Vec::new")]
-    pub read: Vec<String>,
-    #[serde(default="Vec::new")]
-    pub write: Vec<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub read: Option<Vec<String>>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub write: Option<Vec<String>>,
 }
 
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default)]
 pub struct Record {
-    #[serde(skip_serializing_if="Option::is_none")]
     pub data: Option<Value>,
-
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub permissions: Option<RecordPermissions>,
-
-    #[serde(skip_serializing, skip_deserializing)]
+    pub permissions: RecordPermissions,
     pub client: KintoClient,
-
-    #[serde(skip_serializing, skip_deserializing)]
     pub bucket: Bucket,
-
-    #[serde(skip_serializing, skip_deserializing)]
     pub collection: Collection,
+    pub id: Option<String>
 }
 
 
@@ -48,7 +38,8 @@ impl Record {
             bucket: collection.bucket.clone(),
             collection: collection.clone(),
             data: None,
-            permissions: None
+            permissions: RecordPermissions::default(),
+            id: None
         }
     }
 
@@ -59,8 +50,9 @@ impl Record {
             client: client,
             bucket: collection.bucket.clone(),
             collection: collection,
-            data: json!({"id": id}).into(),
-            permissions: None
+            data: None,
+            permissions: RecordPermissions::default(),
+            id: Some(id.to_owned())
         }
     }
 }
@@ -68,62 +60,53 @@ impl Record {
 
 impl Resource for Record {
 
+    fn resource_path(&self) -> Result<String, KintoError> {
+        Ok(format!("{}/records", try!(self.collection.record_path())))
+    }
+
     fn unwrap_response(&mut self, wrapper: ResponseWrapper){
-        *self = wrapper.into()
+        self.data = Some(wrapper.body["data"]
+                                .to_owned());
+        self.permissions = serde_json::from_value(wrapper.body["permissions"]
+                                                         .to_owned()).unwrap();
+        self.id = Some(wrapper.body["data"]["id"].as_str()
+                                                 .unwrap()
+                                                 .to_owned());
     }
 
-    fn get_data(&self) -> Option<&Value> {
-       self.data.as_ref()
+    fn client(&self) -> KintoClient {
+        self.client.clone()
     }
 
-    fn load_request(&self) -> GetRecord {
-        GetRecord::new(self.client.clone(),
-                       Paths::Record(self.bucket.get_id().unwrap(),
-                                     self.collection.get_id().unwrap(),
-                                     self.get_id().unwrap()).into())
+    fn data(&self) -> Option<Value> {
+        return self.data.clone();
     }
 
-    fn create_request(&self) -> CreateRecord {
-        CreateRecord::new(self.client.clone(),
-                          Paths::Records(self.bucket.get_id().unwrap(),
-                                        self.collection.get_id().unwrap()).into())
+    fn permissions(&self) -> Option<Value> {
+        serde_json::to_value(&(self.permissions)).unwrap_or_default().into()
     }
 
-    fn update_request(&self) -> UpdateRecord {
-        UpdateRecord::new(self.client.clone(),
-                          Paths::Record(self.bucket.get_id().unwrap(),
-                                        self.collection.get_id().unwrap(),
-                                        self.get_id().unwrap()).into())
+    fn id(&self) -> Option<&str> {
+        match self.id.as_ref() {
+            Some(id) => return Some(id),
+            None => ()
+        };
+
+        match self.data.as_ref() {
+            Some(data) => return data["id"].as_str(),
+            None => ()
+        };
+
+        return None;
     }
 
-    fn delete_request(&self) -> DeleteRecord {
-        DeleteRecord::new(self.client.clone(),
-                          Paths::Record(self.bucket.get_id().unwrap(),
-                                        self.collection.get_id().unwrap(),
-                                        self.get_id().unwrap()).into())
-    }
-}
-
-
-impl From<ResponseWrapper> for Record {
-    fn from(wrapper: ResponseWrapper) -> Self {
-        let path_ids = extract_ids_from_path(wrapper.path);
-
-        let bucket_id = path_ids["buckets"].clone().unwrap();
-        let collection_id = path_ids["collections"].clone().unwrap();
-
-        let bucket = Bucket::new_by_id(wrapper.client.clone(),
-                                       bucket_id.as_str());
-        let collection = Collection::new_by_id(wrapper.client.clone(),
-                                               bucket.clone(),
-                                               collection_id.as_str());
-        let record: Record = serde_json::from_value(wrapper.body).unwrap();
-
-        Record {
-            client: wrapper.client,
-            bucket: bucket,
-            collection: collection,
-            ..record
+    fn timestamp(&self) -> Option<u64> {
+        match self.data() {
+            Some(data) => match data["lat_modified"].as_u64() {
+                Some(ts) => ts.into(),
+                None => None
+            },
+            None => None
         }
     }
 }
@@ -138,7 +121,7 @@ mod test_record {
     fn test_create_record() {
         let mut record = setup_record();
         record.data = json!({"good": true}).into();
-
+        print!("{:?}", record.id());
         record.create().unwrap();
         let data = record.data.unwrap().to_owned();
 

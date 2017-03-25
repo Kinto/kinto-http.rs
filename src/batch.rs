@@ -16,7 +16,6 @@ pub struct BatchRequest {
 
 
 impl BatchRequest {
-
     pub fn new(client: KintoClient) -> BatchRequest {
         let mut preparer = RequestPreparer::new(client, Paths::Batch().into());
         preparer.method = Method::Post;
@@ -117,7 +116,7 @@ mod test_record {
         let client = setup_client();
         let bucket = setup_bucket();
         let mut batch = BatchRequest::new(client);
-        batch.add_request(bucket.update_request());
+        batch.add_request(bucket.update_request().unwrap());
         let result: BatchResponseWrapper = batch.send().unwrap().into();
         assert_eq!(result.responses.len(), 1);
         assert_eq!(result.responses[0].status, StatusCode::Created);
@@ -130,8 +129,8 @@ mod test_record {
         let client = setup_client();
         let bucket = setup_bucket();
         let mut batch = BatchRequest::new(client);
-        batch.add_request(bucket.update_request());
-        batch.add_request(bucket.delete_request());
+        batch.add_request(bucket.update_request().unwrap());
+        batch.add_request(bucket.delete_request().unwrap());
         let result: BatchResponseWrapper = batch.send().unwrap().into();
         assert_eq!(batch.requests[0].method, Method::Put);
         assert_eq!(batch.requests[1].method, Method::Delete);
