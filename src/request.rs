@@ -60,9 +60,10 @@ pub trait KintoRequest {
         // Borrow preparer mutable
         let preparer = self.preparer();
 
-        let full_path = format!("{}{}?{}", preparer.client.server_url,
-                                           preparer.path,
-                                           preparer.query);
+        let full_path = format!("{}{}?{}",
+                                preparer.client.server_url,
+                                preparer.path,
+                                preparer.query);
 
         let mut headers = preparer.headers.to_owned();
 

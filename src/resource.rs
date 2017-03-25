@@ -51,7 +51,11 @@ pub trait Resource: Clone {
                         data["id"] = id.into();
                         body["data"] = data;
                     }
-                    None => body["data"] = json!({"id": id}),
+                    None => {
+                        body["data"] = json!({
+                                                 "id": id
+                                             })
+                    }
                 }
             }
             None => {
