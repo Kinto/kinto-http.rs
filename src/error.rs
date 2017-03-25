@@ -13,26 +13,26 @@ pub enum KintoError {
     UndefinedIdError,
     HyperError,
     JsonError,
-    IOError
+    IOError,
 }
 
 
 impl From<IOError> for KintoError {
     fn from(err: IOError) -> Self {
-       err.into()
+        err.into()
     }
 }
 
 
 impl From<JsonError> for KintoError {
     fn from(err: JsonError) -> Self {
-       err.into()
+        err.into()
     }
 }
 
 
 impl From<HyperError> for KintoError {
     fn from(err: HyperError) -> Self {
-       err.into()
+        err.into()
     }
 }

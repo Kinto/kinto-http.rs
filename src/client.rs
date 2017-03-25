@@ -20,10 +20,8 @@ pub struct KintoClient {
 
 
 impl KintoClient {
-
     /// Create a client.
-    pub fn new(server_url:String, auth: Option<Authorization<Basic>>)
-               -> KintoClient {
+    pub fn new(server_url: String, auth: Option<Authorization<Basic>>) -> KintoClient {
 
         // Build an SSL connector
         let ssl = NativeTlsClient::new().unwrap();
@@ -66,17 +64,17 @@ impl KintoClient {
 
     /// Create a custom request for a new bucket.
     pub fn create_bucket_request(&self) -> CreateRecord {
-        CreateRecord::new(self.clone(),  Paths::Buckets().into())
+        CreateRecord::new(self.clone(), Paths::Buckets.into())
     }
 
     /// Create a custom request for listing buckets.
     pub fn list_buckets_request(&self) -> GetCollection {
-        GetCollection::new(self.clone(), Paths::Buckets().into())
+        GetCollection::new(self.clone(), Paths::Buckets.into())
     }
 
     /// Create a custom request for deleting buckets.
     pub fn delete_buckets_request(&self) -> DeleteCollection {
-        DeleteCollection::new(self.clone(), Paths::Buckets().into())
+        DeleteCollection::new(self.clone(), Paths::Buckets.into())
     }
 
     /// Flush the server (if the flush endpoint is enabled).
@@ -87,13 +85,14 @@ impl KintoClient {
         let mut headers = Headers::new();
         match self.auth.to_owned() {
             Some(method) => headers.set(method),
-            None => ()
+            None => (),
         };
 
-       try!(self.http_client.post(path.as_str())
-                            .headers(headers)
-                            .send());
-       Ok(())
+        try!(self.http_client
+                 .post(path.as_str())
+                 .headers(headers)
+                 .send());
+        Ok(())
     }
 }
 
@@ -174,4 +173,3 @@ mod test_client {
         assert_eq!(request.preparer.path, "/buckets");
     }
 }
-

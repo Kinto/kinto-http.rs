@@ -12,5 +12,5 @@ pub struct ResponseWrapper {
     pub path: String,
     pub status: StatusCode,
     pub headers: Headers,
-    pub body: Value
+    pub body: Value,
 }

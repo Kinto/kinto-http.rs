@@ -29,7 +29,7 @@ pub struct Bucket {
     pub data: Option<Value>,
     pub permissions: BucketPermissions,
     pub client: KintoClient,
-    pub id: Option<String>
+    pub id: Option<String>,
 }
 
 
@@ -40,7 +40,7 @@ impl Bucket {
             client: client,
             data: None,
             permissions: BucketPermissions::default(),
-            id: None
+            id: None,
         }
     }
 
@@ -49,7 +49,7 @@ impl Bucket {
             client: client,
             data: None,
             permissions: BucketPermissions::default(),
-            id: Some(id.to_owned())
+            id: Some(id.to_owned()),
         }
     }
 
@@ -91,22 +91,18 @@ impl Bucket {
 
 
 impl Resource for Bucket {
-
     fn resource_path(&self) -> Result<String, KintoError> {
         Ok(format!("/buckets"))
     }
 
-    fn unwrap_response(&mut self, wrapper: ResponseWrapper){
-        self.data = Some(wrapper.body["data"]
-                                .to_owned());
-        self.permissions = serde_json::from_value(wrapper.body["permissions"]
-                                                         .to_owned()).unwrap();
-        self.id = Some(wrapper.body["data"]["id"].as_str()
-                                                 .unwrap()
-                                                 .to_owned());
+    fn unwrap_response(&mut self, wrapper: ResponseWrapper) {
+        self.data = Some(wrapper.body["data"].to_owned());
+        self.permissions = serde_json::from_value(wrapper.body["permissions"].to_owned())
+            .unwrap();
+        self.id = Some(wrapper.body["data"]["id"].as_str().unwrap().to_owned());
     }
 
-    fn client(&self) -> KintoClient{
+    fn client(&self) -> KintoClient {
         self.client.clone()
     }
 
@@ -116,20 +112,24 @@ impl Resource for Bucket {
             Some(id) => Some(id),
 
             // If none, try to get id from body
-            None => match self.data.as_ref() {
-                Some(data) => data["id"].as_str(),
-                None => None,
+            None => {
+                match self.data.as_ref() {
+                    Some(data) => data["id"].as_str(),
+                    None => None,
+                }
             }
         }
     }
 
     fn timestamp(&self) -> Option<u64> {
         match self.data() {
-            Some(data) => match data["lat_modified"].as_u64() {
-                Some(ts) => ts.into(),
-                None => None
-            },
-            None => None
+            Some(data) => {
+                match data["lat_modified"].as_u64() {
+                    Some(ts) => ts.into(),
+                    None => None,
+                }
+            }
+            None => None,
         }
     }
 
@@ -278,7 +278,7 @@ mod test_bucket_resource {
 
 #[cfg(test)]
 mod test_bucket_class {
-    use utils::tests::{setup_bucket};
+    use utils::tests::setup_bucket;
     use resource::Resource;
 
     #[test]

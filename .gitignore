@@ -1,6 +1,7 @@
+# Raw cargo stuff
 Cargo.lock
 target/
-*~
 
+# Swap files
 *.swp
-.env
+*.bk

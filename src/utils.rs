@@ -9,7 +9,7 @@ use response::ResponseWrapper;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct List {
-    pub data: Vec<Value>
+    pub data: Vec<Value>,
 }
 
 
@@ -76,12 +76,10 @@ pub mod tests {
         //let server_url = "https://kinto.dev.mozaws.net/v1".to_owned();
         let server_url = "http://localhost:8888/v1".to_owned();
 
-        let auth = Authorization(
-            Basic {
-                username: "a".to_owned(),
-                password: Some("a".to_owned()),
-            }
-        );
+        let auth = Authorization(Basic {
+                                     username: "a".to_owned(),
+                                     password: Some("a".to_owned()),
+                                 });
         let client = KintoClient::new(server_url, auth.into());
         client.flush().unwrap();
         return client;
@@ -104,7 +102,10 @@ pub mod tests {
     pub fn setup_record() -> Record {
         let client = setup_client();
         client.bucket("food").set().unwrap();
-        client.bucket("food").collection("meat").set().unwrap();
+        client.bucket("food")
+            .collection("meat")
+            .set()
+            .unwrap();
         return client.bucket("food").collection("meat").record("entrecote");
     }
 }

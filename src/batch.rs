@@ -17,13 +17,18 @@ pub struct BatchRequest {
 
 impl BatchRequest {
     pub fn new(client: KintoClient) -> BatchRequest {
-        let mut preparer = RequestPreparer::new(client, Paths::Batch().into());
+        let mut preparer = RequestPreparer::new(client, Paths::Batch.into());
         preparer.method = Method::Post;
         preparer.headers.set(ContentType::json());
-        BatchRequest { preparer: preparer, requests: vec![] }
+        BatchRequest {
+            preparer: preparer,
+            requests: vec![],
+        }
     }
 
-    pub fn add_request<T>(&mut self, mut entry: T) where T: KintoRequest {
+    pub fn add_request<T>(&mut self, mut entry: T)
+        where T: KintoRequest
+    {
         self.requests.push(entry.preparer().clone());
     }
 }
@@ -38,8 +43,7 @@ impl KintoRequest for BatchRequest {
 
             let mut headers = Map::new();
             for header in req.headers.iter() {
-                headers.insert(header.name().to_owned(),
-                               header.to_string().into());
+                headers.insert(header.name().to_owned(), header.to_string().into());
             }
 
             let entry = json!({
@@ -67,7 +71,7 @@ pub struct BatchResponseWrapper {
     pub client: KintoClient,
     pub status: StatusCode,
     pub headers: Headers,
-    pub responses: Vec<ResponseWrapper>
+    pub responses: Vec<ResponseWrapper>,
 }
 
 
@@ -75,22 +79,33 @@ impl From<ResponseWrapper> for BatchResponseWrapper {
     fn from(batch_wrapper: ResponseWrapper) -> Self {
         let mut responses = vec![];
 
-        for resp in batch_wrapper.body.get("responses").unwrap().as_array().unwrap() {
+        for resp in batch_wrapper.body
+                .get("responses")
+                .unwrap()
+                .as_array()
+                .unwrap() {
             let wrapper = ResponseWrapper {
                 client: batch_wrapper.client.clone(),
                 // XXX: Unwrap headers
                 headers: Headers::new(),
                 body: resp.get("body").unwrap().clone(),
                 // XXX: Avoid version hardcodes
-                path: resp.get("path").unwrap().as_str().unwrap()
-                                               .replace("/v1/", "/").to_owned(),
-                status: StatusCode::Unregistered(resp.get("status").unwrap()
-                                                     .as_u64().unwrap() as u16),
+                path: resp.get("path")
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .replace("/v1/", "/")
+                    .to_owned(),
+                status: StatusCode::Unregistered(resp.get("status")
+                                                     .unwrap()
+                                                     .as_u64()
+                                                     .unwrap() as
+                                                 u16),
             };
             responses.push(wrapper);
         }
 
-        BatchResponseWrapper{
+        BatchResponseWrapper {
             client: batch_wrapper.client.clone(),
             status: batch_wrapper.status.clone(),
             headers: batch_wrapper.headers.clone(),

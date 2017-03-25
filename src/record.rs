@@ -22,49 +22,43 @@ pub struct Record {
     pub data: Option<Value>,
     pub permissions: RecordPermissions,
     pub collection: Collection,
-    pub id: Option<String>
+    pub id: Option<String>,
 }
 
 
 impl Record {
-
     /// Create a new record object without an id.
     pub fn new<'c>(collection: Collection) -> Self {
         Record {
             collection: collection.clone(),
             data: None,
             permissions: RecordPermissions::default(),
-            id: None
+            id: None,
         }
     }
 
     /// Create a new record object with an id.
-    pub fn new_by_id<'a>(collection: Collection,
-                         id: &'a str) -> Self {
+    pub fn new_by_id<'a>(collection: Collection, id: &'a str) -> Self {
         Record {
             collection: collection,
             data: None,
             permissions: RecordPermissions::default(),
-            id: Some(id.to_owned())
+            id: Some(id.to_owned()),
         }
     }
 }
 
 
 impl Resource for Record {
-
     fn resource_path(&self) -> Result<String, KintoError> {
         Ok(format!("{}/records", try!(self.collection.record_path())))
     }
 
-    fn unwrap_response(&mut self, wrapper: ResponseWrapper){
-        self.data = Some(wrapper.body["data"]
-                                .to_owned());
-        self.permissions = serde_json::from_value(wrapper.body["permissions"]
-                                                         .to_owned()).unwrap();
-        self.id = Some(wrapper.body["data"]["id"].as_str()
-                                                 .unwrap()
-                                                 .to_owned());
+    fn unwrap_response(&mut self, wrapper: ResponseWrapper) {
+        self.data = Some(wrapper.body["data"].to_owned());
+        self.permissions = serde_json::from_value(wrapper.body["permissions"].to_owned())
+            .unwrap();
+        self.id = Some(wrapper.body["data"]["id"].as_str().unwrap().to_owned());
     }
 
     fn client(&self) -> KintoClient {
@@ -82,12 +76,12 @@ impl Resource for Record {
     fn id(&self) -> Option<&str> {
         match self.id.as_ref() {
             Some(id) => return Some(id),
-            None => ()
+            None => (),
         };
 
         match self.data.as_ref() {
             Some(data) => return data["id"].as_str(),
-            None => ()
+            None => (),
         };
 
         return None;
@@ -95,11 +89,13 @@ impl Resource for Record {
 
     fn timestamp(&self) -> Option<u64> {
         match self.data() {
-            Some(data) => match data["lat_modified"].as_u64() {
-                Some(ts) => ts.into(),
-                None => None
-            },
-            None => None
+            Some(data) => {
+                match data["lat_modified"].as_u64() {
+                    Some(ts) => ts.into(),
+                    None => None,
+                }
+            }
+            None => None,
         }
     }
 }
@@ -132,7 +128,7 @@ mod test_record {
         // Tries to create again
         match record.create() {
             Ok(_) => panic!(""),
-            Err(_) => ()
+            Err(_) => (),
         }
     }
 
@@ -157,7 +153,7 @@ mod test_record {
         let mut record = setup_record();
         match record.load() {
             Ok(_) => panic!(""),
-            Err(_) => ()
+            Err(_) => (),
         }
     }
 
@@ -181,7 +177,7 @@ mod test_record {
         let mut record = client.record("food");
         match record.update() {
             Ok(_) => panic!(""),
-            Err(_) => ()
+            Err(_) => (),
         }
     }
 }

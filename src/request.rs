@@ -19,7 +19,7 @@ pub struct RequestPreparer {
     pub path: String,
     pub headers: Headers,
     pub query: String,
-    pub body: Option<Value>
+    pub body: Option<Value>,
 }
 
 
@@ -69,16 +69,17 @@ pub trait KintoRequest {
         // Set authentication headers
         match preparer.client.auth.to_owned() {
             Some(method) => headers.set(method),
-            None => ()
+            None => (),
         };
 
         let payload = match preparer.body.clone() {
             Some(body) => serde_json::to_string(&body).unwrap(),
-            None => "".to_owned()
+            None => "".to_owned(),
         };
 
         // Send prepared request
-        let response = preparer.client.http_client
+        let response = preparer.client
+            .http_client
             .request(preparer.method.to_owned(), &full_path)
             .headers(headers)
             .body(payload.as_str())
@@ -86,7 +87,7 @@ pub trait KintoRequest {
 
         let mut response = match response {
             Ok(response) => response,
-            Err(_) => return Err(KintoError::HyperError)
+            Err(_) => return Err(KintoError::HyperError),
         };
 
         // Handle sync errors
@@ -107,12 +108,12 @@ pub trait KintoRequest {
         try!(response.read_to_string(&mut serialized));
         let body = serde_json::from_str(&serialized).unwrap();
 
-        let response = ResponseWrapper{
+        let response = ResponseWrapper {
             client: preparer.client.to_owned(),
             path: preparer.path.to_owned(),
             status: response.status,
             headers: response.headers.to_owned(),
-            body: body
+            body: body,
         };
 
         return Ok(response);
@@ -139,14 +140,14 @@ pub trait PluralEndpoint: KintoRequest {
 
 /// Get request on plural endpoints.
 pub struct GetCollection {
-    pub preparer: RequestPreparer
+    pub preparer: RequestPreparer,
 }
 
 impl GetCollection {
     pub fn new(client: KintoClient, path: String) -> GetCollection {
         let mut preparer = RequestPreparer::new(client, path);
         preparer.method = Method::Get;
-        GetCollection {preparer: preparer}
+        GetCollection { preparer: preparer }
     }
 }
 
@@ -161,14 +162,14 @@ impl PluralEndpoint for GetCollection {}
 
 /// Delete request on plural endpoints.
 pub struct DeleteCollection {
-    pub preparer: RequestPreparer
+    pub preparer: RequestPreparer,
 }
 
 impl DeleteCollection {
     pub fn new(client: KintoClient, path: String) -> DeleteCollection {
         let mut preparer = RequestPreparer::new(client, path);
         preparer.method = Method::Delete;
-        DeleteCollection {preparer: preparer}
+        DeleteCollection { preparer: preparer }
     }
 }
 
@@ -182,14 +183,14 @@ impl PluralEndpoint for DeleteCollection {}
 
 /// Create request on plural endpoints.
 pub struct CreateRecord {
-    pub preparer: RequestPreparer
+    pub preparer: RequestPreparer,
 }
 
 impl CreateRecord {
     pub fn new(client: KintoClient, path: String) -> CreateRecord {
         let mut preparer = RequestPreparer::new(client, path);
         preparer.method = Method::Post;
-        CreateRecord {preparer: preparer}
+        CreateRecord { preparer: preparer }
     }
 }
 
@@ -204,18 +205,18 @@ impl PayloadedEndpoint for CreateRecord {}
 
 /// Get request on single endpoints.
 pub struct GetRecord {
-    pub preparer: RequestPreparer
+    pub preparer: RequestPreparer,
 }
 
 impl GetRecord {
     pub fn new(client: KintoClient, path: String) -> GetRecord {
         let mut preparer = RequestPreparer::new(client, path);
         preparer.method = Method::Get;
-        GetRecord {preparer: preparer}
+        GetRecord { preparer: preparer }
     }
 }
 
-impl KintoRequest for GetRecord  {
+impl KintoRequest for GetRecord {
     fn preparer(&mut self) -> &mut RequestPreparer {
         &mut self.preparer
     }
@@ -223,19 +224,21 @@ impl KintoRequest for GetRecord  {
 
 /// Update request on single endpoints.
 pub struct UpdateRecord {
-    pub preparer: RequestPreparer
+    pub preparer: RequestPreparer,
 }
 
 impl UpdateRecord {
     pub fn new(client: KintoClient, path: String) -> UpdateRecord {
         let mut preparer = RequestPreparer::new(client, path);
         preparer.method = Method::Put;
-        UpdateRecord {preparer: preparer}
+        UpdateRecord { preparer: preparer }
     }
 }
 
 impl KintoRequest for UpdateRecord {
-    fn preparer(&mut self) -> &mut RequestPreparer {&mut self.preparer}
+    fn preparer(&mut self) -> &mut RequestPreparer {
+        &mut self.preparer
+    }
 }
 
 impl PayloadedEndpoint for UpdateRecord {}
@@ -243,14 +246,14 @@ impl PayloadedEndpoint for UpdateRecord {}
 
 /// Patch request on single endpoints.
 pub struct PatchRecord {
-    pub preparer: RequestPreparer
+    pub preparer: RequestPreparer,
 }
 
 impl PatchRecord {
     pub fn new(client: KintoClient, path: String) -> PatchRecord {
         let mut preparer = RequestPreparer::new(client, path);
         preparer.method = Method::Patch;
-        PatchRecord {preparer: preparer}
+        PatchRecord { preparer: preparer }
     }
 }
 
@@ -264,13 +267,15 @@ impl PayloadedEndpoint for PatchRecord {}
 
 
 /// Delete request on single endpoints.
-pub struct DeleteRecord {pub preparer: RequestPreparer}
+pub struct DeleteRecord {
+    pub preparer: RequestPreparer,
+}
 
 impl DeleteRecord {
     pub fn new(client: KintoClient, path: String) -> DeleteRecord {
         let mut preparer = RequestPreparer::new(client, path);
         preparer.method = Method::Delete;
-        DeleteRecord {preparer: preparer}
+        DeleteRecord { preparer: preparer }
     }
 }
 

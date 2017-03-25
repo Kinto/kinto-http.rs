@@ -3,8 +3,8 @@ use std::convert::Into;
 
 /// Known paths in the kinto server.
 pub enum Paths<'a> {
-    Batch(),
-    Buckets(),
+    Batch,
+    Buckets,
     Bucket(&'a str),
     Groups(&'a str),
     Group(&'a str, &'a str),
@@ -15,51 +15,57 @@ pub enum Paths<'a> {
 }
 
 
-impl <'a> Into <String> for Paths<'a> {
+impl<'a> Into<String> for Paths<'a> {
     fn into(self) -> String {
         match self {
-            Paths::Batch() =>
-                format!("/batch"),
-            Paths::Buckets() =>
-                format!("/buckets"),
-            Paths::Bucket(id) =>
-                format!("/buckets/{id}", id=id),
-            Paths::Groups(bucket_id) =>
-                format!("/buckets/{bucket_id}/groups",
-                        bucket_id=bucket_id),
-            Paths::Group(bucket_id, id) =>
+            Paths::Batch => format!("/batch"),
+            Paths::Buckets => format!("/buckets"),
+            Paths::Bucket(id) => format!("/buckets/{id}", id = id),
+            Paths::Groups(bucket_id) => {
+                format!("/buckets/{bucket_id}/groups", bucket_id = bucket_id)
+            }
+            Paths::Group(bucket_id, id) => {
                 format!("/buckets/{bucket_id}/groups/{id}",
-                        bucket_id=bucket_id, id=id),
-            Paths::Collections(bucket_id) =>
-                format!("/buckets/{bucket_id}/collections",
-                        bucket_id=bucket_id),
-            Paths::Collection(bucket_id, id) =>
+                        bucket_id = bucket_id,
+                        id = id)
+            }
+            Paths::Collections(bucket_id) => {
+                format!("/buckets/{bucket_id}/collections", bucket_id = bucket_id)
+            }
+            Paths::Collection(bucket_id, id) => {
                 format!("/buckets/{bucket_id}/collections/{id}",
-                        bucket_id=bucket_id, id=id),
-            Paths::Records(bucket_id, collection_id) =>
+                        bucket_id = bucket_id,
+                        id = id)
+            }
+            Paths::Records(bucket_id, collection_id) => {
                 format!("/buckets/{bucket_id}/collections/{collection_id}/records",
-                        bucket_id=bucket_id, collection_id=collection_id),
-            Paths::Record(bucket_id, collection_id, id) =>
+                        bucket_id = bucket_id,
+                        collection_id = collection_id)
+            }
+            Paths::Record(bucket_id, collection_id, id) => {
                 format!("/buckets/{bucket_id}/collections/{collection_id}/records/{id}",
-                        bucket_id=bucket_id, collection_id=collection_id, id=id),
+                        bucket_id = bucket_id,
+                        collection_id = collection_id,
+                        id = id)
+            }
         }
     }
 }
 
 
 #[cfg(test)]
-mod test_paths{
+mod test_paths {
     use super::Paths;
 
     #[test]
     fn test_batch_path() {
-        let path: String = Paths::Batch().into();
+        let path: String = Paths::Batch.into();
         assert_eq!(path, "/batch");
     }
 
     #[test]
     fn test_buckets_path() {
-        let path: String = Paths::Buckets().into();
+        let path: String = Paths::Buckets.into();
         assert_eq!(path, "/buckets");
     }
 

@@ -28,19 +28,18 @@ pub struct Collection {
     pub data: Option<Value>,
     pub permissions: CollectionPermissions,
     pub bucket: Bucket,
-    pub id: Option<String>
+    pub id: Option<String>,
 }
 
 
 impl Collection {
-
     /// Create a new collection resource.
     pub fn new(bucket: Bucket) -> Self {
         Collection {
             bucket: bucket,
             id: None,
             data: None,
-            permissions: CollectionPermissions::default()
+            permissions: CollectionPermissions::default(),
         }
     }
 
@@ -50,7 +49,7 @@ impl Collection {
             bucket: bucket,
             id: Some(id.to_owned()),
             data: None,
-            permissions: CollectionPermissions::default()
+            permissions: CollectionPermissions::default(),
         }
     }
 
@@ -78,33 +77,29 @@ impl Collection {
 
     pub fn list_records_request(&self) -> GetCollection {
         GetCollection::new(self.client(),
-                           Paths::Records(self.bucket.id().unwrap(),
-                                          self.id().unwrap()).into())
+                           Paths::Records(self.bucket.id().unwrap(), self.id().unwrap())
+                               .into())
     }
 
     pub fn delete_records_request(&self) -> DeleteCollection {
         DeleteCollection::new(self.client(),
-                           Paths::Records(self.bucket.id().unwrap(),
-                                          self.id().unwrap()).into())
+                              Paths::Records(self.bucket.id().unwrap(),
+                                             self.id().unwrap())
+                                      .into())
     }
-
 }
 
 
 impl Resource for Collection {
-
     fn resource_path(&self) -> Result<String, KintoError> {
         Ok(format!("{}/collections", try!(self.bucket.record_path())))
     }
 
-    fn unwrap_response(&mut self, wrapper: ResponseWrapper){
-        self.data = Some(wrapper.body["data"]
-                                .to_owned());
-        self.permissions = serde_json::from_value(wrapper.body["permissions"]
-                                                         .to_owned()).unwrap();
-        self.id = Some(wrapper.body["data"]["id"].as_str()
-                                                 .unwrap()
-                                                 .to_owned());
+    fn unwrap_response(&mut self, wrapper: ResponseWrapper) {
+        self.data = Some(wrapper.body["data"].to_owned());
+        self.permissions = serde_json::from_value(wrapper.body["permissions"].to_owned())
+            .unwrap();
+        self.id = Some(wrapper.body["data"]["id"].as_str().unwrap().to_owned());
     }
 
     fn client(&self) -> KintoClient {
@@ -114,12 +109,12 @@ impl Resource for Collection {
     fn id(&self) -> Option<&str> {
         match self.id.as_ref() {
             Some(id) => return Some(id),
-            None => ()
+            None => (),
         };
 
         match self.data.as_ref() {
             Some(data) => return data["id"].as_str(),
-            None => ()
+            None => (),
         };
 
         return None;
@@ -127,11 +122,13 @@ impl Resource for Collection {
 
     fn timestamp(&self) -> Option<u64> {
         match self.data() {
-            Some(data) => match data["lat_modified"].as_u64() {
-                Some(ts) => ts.into(),
-                None => None
-            },
-            None => None
+            Some(data) => {
+                match data["lat_modified"].as_u64() {
+                    Some(ts) => ts.into(),
+                    None => None,
+                }
+            }
+            None => None,
         }
     }
 
@@ -172,7 +169,7 @@ mod test_collection {
         // Tries to create again
         match collection.create() {
             Ok(_) => panic!(""),
-            Err(_) => ()
+            Err(_) => (),
         }
     }
 
@@ -197,7 +194,7 @@ mod test_collection {
         let mut collection = setup_collection();
         match collection.load() {
             Ok(_) => panic!(""),
-            Err(_) => ()
+            Err(_) => (),
         }
     }
 
@@ -221,7 +218,7 @@ mod test_collection {
         let mut collection = client.collection("food");
         match collection.update() {
             Ok(_) => panic!(""),
-            Err(_) => ()
+            Err(_) => (),
         }
     }
 
