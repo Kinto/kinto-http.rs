@@ -6,7 +6,7 @@ use KintoClient;
 
 
 /// Wrapper for a Kinto response object.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ResponseWrapper {
     pub client: KintoClient,
     pub path: String,

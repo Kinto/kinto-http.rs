@@ -3,10 +3,12 @@ use serde_json::Value;
 
 use KintoClient;
 use error::KintoError;
+use request::KintoRequest;
 use response::ResponseWrapper;
 use resource::Resource;
 use bucket::Bucket;
 use record::Record;
+use utils::unwrap_collection_records;
 
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -60,13 +62,16 @@ impl Collection {
     }
 
     /// List the names of all available records.
-    pub fn list_records(&self) -> Result<Vec<String>, KintoError> {
-        Err(KintoError::UnavailableEndpointError)
+    pub fn list_records(&self) -> Result<Vec<Record>, KintoError> {
+        let response = try!(try!(self.new_record().list_request()).follow_subrequests());
+        return Ok(unwrap_collection_records(response, self.new_record()));
     }
 
     /// Delete all available records.
     pub fn delete_records(&self) -> Result<(), KintoError> {
-        Err(KintoError::UnavailableEndpointError)
+        let resource = Record::new(self.clone());
+        try!(try!(resource.delete_all_request()).follow_subrequests());
+        Ok(())
     }
 }
 
@@ -104,7 +109,7 @@ impl Resource for Collection {
     fn get_timestamp(&self) -> Option<u64> {
         match self.get_data() {
             Some(data) => {
-                match data["lat_modified"].as_u64() {
+                match data["last_modified"].as_u64() {
                     Some(ts) => ts.into(),
                     None => None,
                 }
@@ -117,6 +122,11 @@ impl Resource for Collection {
         return self.data.clone();
     }
 
+    fn set_data(&mut self, data: Value) -> Self {
+        self.data = data.into();
+        return self.clone();
+    }
+
     fn get_permissions(&self) -> Option<Value> {
         serde_json::to_value(&(self.permissions)).unwrap_or_default().into()
     }
@@ -125,7 +135,10 @@ impl Resource for Collection {
 
 #[cfg(test)]
 mod test_collection {
+    use request::{KintoRequest, PluralEndpoint};
     use resource::Resource;
+    use record::Record;
+    use utils::unwrap_collection_records;
     use utils::tests::{setup_collection, setup_bucket};
 
     #[test]
@@ -148,10 +161,7 @@ mod test_collection {
         collection.create().unwrap();
 
         // Tries to create again
-        match collection.create() {
-            Ok(_) => panic!(""),
-            Err(_) => (),
-        }
+        collection.create().unwrap_err();
     }
 
     #[test]
@@ -173,10 +183,7 @@ mod test_collection {
     #[test]
     fn test_load_collection_fails_on_not_existing() {
         let mut collection = setup_collection();
-        match collection.load() {
-            Ok(_) => panic!(""),
-            Err(_) => (),
-        }
+        collection.load().unwrap_err();
     }
 
     #[test]
@@ -197,10 +204,7 @@ mod test_collection {
     fn test_update_collection_fails_on_not_existing() {
         let client = setup_bucket();
         let mut collection = client.collection("food");
-        match collection.update() {
-            Ok(_) => panic!(""),
-            Err(_) => (),
-        }
+        collection.update().unwrap_err();
     }
 
     #[test]
@@ -219,5 +223,65 @@ mod test_collection {
         assert_eq!(record.data, None);
         assert_eq!(record.get_id(), None);
 
+    }
+
+    #[test]
+    fn test_list_records() {
+        let mut collection = setup_collection();
+        collection.create().unwrap();
+        for _ in 0..10 {
+            collection.new_record().create().unwrap();
+        }
+        let records = collection.list_records();
+        assert_eq!(records.unwrap().len(), 10);
+    }
+
+    #[test]
+    fn test_paginated_records_list() {
+        let mut collection = setup_collection();
+        collection.create().unwrap();
+        for _ in 0..10 {
+            collection.new_record().create().unwrap();
+        }
+
+        let resource = Record::new(collection.clone());
+        let response = resource.list_request()
+            .unwrap()
+            .limit(3)
+            .follow_subrequests()
+            .unwrap();
+        let records: Vec<Record> = unwrap_collection_records(response,
+                                                             collection.new_record());
+        assert_eq!(records.len(), 10);
+    }
+
+    #[test]
+    fn test_delete_records() {
+        let mut collection = setup_collection();
+        collection.create().unwrap();
+        for _ in 0..10 {
+            collection.new_record().create().unwrap();
+        }
+        collection.delete_records().unwrap();
+        let records = collection.list_records();
+        assert_eq!(records.unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_paginated_records_delete() {
+        let mut collection = setup_collection();
+        collection.create().unwrap();
+        for _ in 0..10 {
+            collection.new_record().create().unwrap();
+        }
+
+        let resource = Record::new(collection.clone());
+        resource.delete_all_request()
+            .unwrap()
+            .limit(5)
+            .follow_subrequests()
+            .unwrap();
+        let records = collection.list_records().unwrap();
+        assert_eq!(records.len(), 0);
     }
 }

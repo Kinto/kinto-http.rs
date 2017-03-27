@@ -1,3 +1,4 @@
+use std::str;
 use std::io::Read;
 
 use serde_json;
@@ -39,7 +40,7 @@ impl RequestPreparer {
 
 
 /// Base trait with options shared with all kinto requests
-pub trait KintoRequest {
+pub trait KintoRequest: Clone {
     fn preparer(&mut self) -> &mut RequestPreparer;
 
     /// Set If-Match header.
@@ -60,10 +61,13 @@ pub trait KintoRequest {
         // Borrow preparer mutable
         let preparer = self.preparer();
 
-        let full_path = format!("{}{}?{}",
+        let mut full_path = format!("{}{}",
                                 preparer.client.server_url,
-                                preparer.path,
-                                preparer.query);
+                                preparer.path);
+
+        if preparer.query.len() > 0 {
+            full_path = format!("{}?{}", full_path, preparer.query);
+        }
 
         let mut headers = preparer.headers.to_owned();
 
@@ -119,6 +123,39 @@ pub trait KintoRequest {
 
         return Ok(response);
     }
+
+    fn follow_subrequests(&mut self) -> Result<ResponseWrapper, KintoError> {
+
+        // Send first request
+        let mut base_response = try!(self.send());
+        let mut current_response = base_response.clone();
+
+        loop {
+            let page_header = match current_response.headers.get_raw("next-page") {
+                Some(values) => values[0].clone(),
+                None => return Ok(base_response),
+            };
+
+            // Gets nets page string
+            let next_page_url = try!(str::from_utf8(page_header.as_slice())).to_owned();
+
+            // Repeated request on the provided endpoint
+            let mut temp_request = self.clone();
+
+            // Remove client prefix
+            temp_request.preparer().path =
+                next_page_url.as_str().replace(base_response.client.server_url.as_str(),
+                                               "");
+            temp_request.preparer().query = "".to_owned();
+
+            current_response = try!(temp_request.send());
+
+            // Join data fields
+            let mut base_data = base_response.body["data"].as_array_mut().unwrap();
+            let new_data = current_response.body["data"].as_array().unwrap();
+            base_data.extend(new_data.iter().cloned());
+        }
+    }
 }
 
 
@@ -140,6 +177,7 @@ pub trait PluralEndpoint: KintoRequest {
 }
 
 /// Get request on plural endpoints.
+#[derive(Debug, Clone)]
 pub struct GetCollection {
     pub preparer: RequestPreparer,
 }
@@ -162,6 +200,7 @@ impl PluralEndpoint for GetCollection {}
 
 
 /// Delete request on plural endpoints.
+#[derive(Debug, Clone)]
 pub struct DeleteCollection {
     pub preparer: RequestPreparer,
 }
@@ -183,6 +222,7 @@ impl KintoRequest for DeleteCollection {
 impl PluralEndpoint for DeleteCollection {}
 
 /// Create request on plural endpoints.
+#[derive(Debug, Clone)]
 pub struct CreateRecord {
     pub preparer: RequestPreparer,
 }
@@ -205,6 +245,7 @@ impl PayloadedEndpoint for CreateRecord {}
 
 
 /// Get request on single endpoints.
+#[derive(Debug, Clone)]
 pub struct GetRecord {
     pub preparer: RequestPreparer,
 }
@@ -224,6 +265,7 @@ impl KintoRequest for GetRecord {
 }
 
 /// Update request on single endpoints.
+#[derive(Debug, Clone)]
 pub struct UpdateRecord {
     pub preparer: RequestPreparer,
 }
@@ -246,6 +288,7 @@ impl PayloadedEndpoint for UpdateRecord {}
 
 
 /// Patch request on single endpoints.
+#[derive(Debug, Clone)]
 pub struct PatchRecord {
     pub preparer: RequestPreparer,
 }
@@ -268,6 +311,7 @@ impl PayloadedEndpoint for PatchRecord {}
 
 
 /// Delete request on single endpoints.
+#[derive(Debug, Clone)]
 pub struct DeleteRecord {
     pub preparer: RequestPreparer,
 }

@@ -2,6 +2,7 @@ extern crate hyper;
 extern crate serde;
 
 use std::io::Error as IOError;
+use std::str::Utf8Error;
 use hyper::Error as HyperError;
 use serde_json::error::Error as JsonError;
 
@@ -20,6 +21,13 @@ pub enum KintoError {
 
 impl From<IOError> for KintoError {
     fn from(err: IOError) -> Self {
+        err.into()
+    }
+}
+
+
+impl From<Utf8Error> for KintoError {
+    fn from(err: Utf8Error) -> Self {
         err.into()
     }
 }

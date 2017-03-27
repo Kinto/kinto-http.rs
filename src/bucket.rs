@@ -3,9 +3,12 @@ use serde_json::Value;
 
 use KintoClient;
 use error::KintoError;
+use request::KintoRequest;
 use response::ResponseWrapper;
 use resource::Resource;
 use collection::Collection;
+
+use utils::unwrap_collection_records;
 
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -61,13 +64,16 @@ impl Bucket {
     }
 
     /// List the names of all available collections.
-    pub fn list_collections(&self) -> Result<Vec<String>, KintoError> {
-        Err(KintoError::UnavailableEndpointError)
+    pub fn list_collections(&self) -> Result<Vec<Collection>, KintoError> {
+        let response =
+            try!(try!(self.new_collection().list_request()).follow_subrequests());
+        return Ok(unwrap_collection_records(response, self.new_collection()));
     }
 
     /// Delete all available collections.
     pub fn delete_collections(&self) -> Result<(), KintoError> {
-        Err(KintoError::UnavailableEndpointError)
+        try!(try!(self.new_collection().delete_all_request()).follow_subrequests());
+        Ok(())
     }
 }
 
@@ -117,6 +123,11 @@ impl Resource for Bucket {
 
     fn get_data(&self) -> Option<Value> {
         return self.data.clone();
+    }
+
+    fn set_data(&mut self, data: Value) -> Self {
+        self.data = data.into();
+        return self.clone();
     }
 
     fn get_permissions(&self) -> Option<Value> {

@@ -69,6 +69,11 @@ impl Resource for Record {
         return self.data.clone();
     }
 
+    fn set_data(&mut self, data: Value) -> Self {
+        self.data = data.into();
+        return self.clone();
+    }
+
     fn get_permissions(&self) -> Option<Value> {
         serde_json::to_value(&(self.permissions)).unwrap_or_default().into()
     }
@@ -125,10 +130,7 @@ mod test_record {
         record.create().unwrap();
 
         // Tries to create again
-        match record.create() {
-            Ok(_) => panic!(""),
-            Err(_) => (),
-        }
+        record.create().unwrap_err();
     }
 
     #[test]
@@ -143,17 +145,13 @@ mod test_record {
         record.load().unwrap();
         let load_data = record.data.unwrap();
 
-
         assert_eq!(create_data, load_data);
     }
 
     #[test]
     fn test_load_record_fails_on_not_existing() {
         let mut record = setup_record();
-        match record.load() {
-            Ok(_) => panic!(""),
-            Err(_) => (),
-        }
+        record.load().unwrap_err();
     }
 
     #[test]
@@ -174,9 +172,6 @@ mod test_record {
     fn test_update_record_fails_on_not_existing() {
         let client = setup_collection();
         let mut record = client.record("food");
-        match record.update() {
-            Ok(_) => panic!(""),
-            Err(_) => (),
-        }
+        record.update().unwrap_err();
     }
 }

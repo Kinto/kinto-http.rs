@@ -3,8 +3,8 @@ use hyper::header::{IfMatch, IfNoneMatch};
 
 use client::KintoClient;
 use error::KintoError;
-use request::{GetRecord, CreateRecord, UpdateRecord, DeleteRecord,
-              GetCollection, DeleteCollection, KintoRequest, PayloadedEndpoint};
+use request::{GetRecord, CreateRecord, UpdateRecord, DeleteRecord, GetCollection,
+              DeleteCollection, KintoRequest, PayloadedEndpoint};
 use response::ResponseWrapper;
 use utils::timestamp_to_etag;
 
@@ -30,6 +30,8 @@ pub trait Resource: Clone {
 
     /// Get the record data.
     fn get_data(&self) -> Option<Value>;
+
+    fn set_data(&mut self, data: Value) -> Self;
 
     /// Get the record permissions.
     fn get_permissions(&self) -> Option<Value>;
@@ -99,7 +101,7 @@ pub trait Resource: Clone {
     }
 
     /// Create a custom list collections request.
-    fn list_all_request(&self) -> Result<GetCollection, KintoError> {
+    fn list_request(&self) -> Result<GetCollection, KintoError> {
         Ok(GetCollection::new(self.get_client(), try!(self.resource_path())))
     }
 

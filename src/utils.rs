@@ -1,26 +1,21 @@
 use std::collections::HashMap;
 
-use serde_json;
-use serde_json::Value;
 use hyper::header::EntityTag;
 
 use response::ResponseWrapper;
+use resource::Resource;
 
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct List {
-    pub data: Vec<Value>,
-}
-
-
-/// Get the resource ids from a collection endpoint.
-pub fn unwrap_collection_ids(wrapper: ResponseWrapper) -> Vec<String> {
-    let list: List = serde_json::from_value(wrapper.body).unwrap();
-    let mut ids = vec![];
-    for record in list.data {
-        ids.push(record["id"].to_string());
+/// Get the obkects from a plural endpoint.
+pub fn unwrap_collection_records<T>(wrapper: ResponseWrapper, object: T) -> Vec<T>
+    where T: Resource
+{
+    let mut records = vec![];
+    for obj in wrapper.body["data"].as_array().unwrap() {
+        let record = object.clone().set_data(obj.clone());
+        records.push(record);
     }
-    return ids;
+    return records;
 }
 
 
@@ -54,9 +49,6 @@ pub fn extract_ids_from_path(path: String) -> HashMap<String, Option<String>> {
     }
     return map;
 }
-
-
-// pub fn follow_subrequests(preparer: RequestPreparer) -> ResponseWrapper {}
 
 
 #[cfg(test)]

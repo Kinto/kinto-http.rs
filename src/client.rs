@@ -4,7 +4,11 @@ use hyper::net::HttpsConnector;
 use hyper_native_tls::NativeTlsClient;
 
 use error::KintoError;
+use resource::Resource;
+use request::KintoRequest;
 use bucket::Bucket;
+
+use utils::unwrap_collection_records;
 
 
 /// Client for the Kinto HTTP API.
@@ -47,13 +51,15 @@ impl KintoClient {
     }
 
     /// List the names of all available buckets.
-    pub fn list_buckets(&self) -> Result<Vec<String>, KintoError> {
-        Err(KintoError::UnavailableEndpointError)
+    pub fn list_buckets(&self) -> Result<Vec<Bucket>, KintoError> {
+        let response = try!(try!(self.new_bucket().list_request()).follow_subrequests());
+        return Ok(unwrap_collection_records(response, self.new_bucket()));
     }
 
     /// Delete all available buckets.
     pub fn delete_buckets(&self) -> Result<(), KintoError> {
-        Err(KintoError::UnavailableEndpointError)
+        try!(try!(self.new_bucket().delete_all_request()).follow_subrequests());
+        Ok(())
     }
 
     /// Flush the server (if the flush endpoint is enabled).

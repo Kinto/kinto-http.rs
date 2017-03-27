@@ -9,6 +9,7 @@ use request::{RequestPreparer, KintoRequest};
 use response::ResponseWrapper;
 
 
+#[derive(Debug, Clone)]
 pub struct BatchRequest {
     pub preparer: RequestPreparer,
     pub requests: Vec<RequestPreparer>,
@@ -67,6 +68,7 @@ impl KintoRequest for BatchRequest {
 }
 
 
+#[derive(Debug, Clone)]
 pub struct BatchResponseWrapper {
     pub client: KintoClient,
     pub status: StatusCode,
