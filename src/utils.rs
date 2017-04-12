@@ -7,7 +7,7 @@ use resource::Resource;
 
 
 /// Get the obkects from a plural endpoint.
-pub fn unwrap_collection_records<T>(wrapper: ResponseWrapper, object: T) -> Vec<T>
+pub fn unwrap_collection_records<T>(wrapper: &ResponseWrapper, object: &T) -> Vec<T>
     where T: Resource
 {
     let mut records = vec![];
@@ -15,25 +15,25 @@ pub fn unwrap_collection_records<T>(wrapper: ResponseWrapper, object: T) -> Vec<
         let record = object.clone().set_data(obj.clone());
         records.push(record);
     }
-    return records;
+    records
 }
 
 
 /// Transform an integer timestamp into an Etag header.
 pub fn timestamp_to_etag(timestamp: u64) -> Vec<EntityTag> {
     let quoted = format!("{}", timestamp);
-    return vec![EntityTag::new(false, quoted)];
+    vec![EntityTag::new(false, quoted)]
 }
 
 
-/// Split a path (e.g. "/buckets/food/collections/foo") into a resource name HashMap.
-pub fn extract_ids_from_path(path: String) -> HashMap<String, Option<String>> {
+/// Split a path (e.g. "/buckets/food/collections/foo") into a resource name `HashMap`.
+pub fn extract_ids_from_path(path: &str) -> HashMap<String, Option<String>> {
 
     // XXX: Remove version from path if exists. We shouldn't hardcode version
     let path = path.replace("/v1", "").to_owned();
 
     // Split path into ["", "buckets", "bucket_id", ...]
-    let mut split = path.split("/");
+    let mut split = path.split('/');
 
     // Remove starting "/"
     split.next().unwrap();
@@ -47,7 +47,7 @@ pub fn extract_ids_from_path(path: String) -> HashMap<String, Option<String>> {
         };
         map.insert(key.to_owned(), value);
     }
-    return map;
+    map
 }
 
 

@@ -53,18 +53,18 @@ impl Collection {
     }
 
     pub fn record(&self, id: &str) -> Record {
-        return Record::new_by_id(self.clone(), id);
+        Record::new_by_id(self.clone(), id)
     }
 
     /// Create a new empty record with a generated id.
     pub fn new_record(&self) -> Record {
-        return Record::new(self.clone());
+        Record::new(self.clone())
     }
 
     /// List the names of all available records.
     pub fn list_records(&self) -> Result<Vec<Record>, KintoError> {
         let response = try!(try!(self.new_record().list_request()).follow_subrequests());
-        return Ok(unwrap_collection_records(response, self.new_record()));
+        Ok(unwrap_collection_records(&response, &self.new_record()))
     }
 
     /// Delete all available records.
@@ -92,18 +92,18 @@ impl Resource for Collection {
         self.bucket.get_config()
     }
 
-    fn get_id(&self) -> Option<&str> {
-        match self.id.as_ref() {
-            Some(id) => return Some(id),
-            None => (),
-        };
+    fn get_id(&self) -> Option<String> {
+        match self.id {
+            Some(ref id) => Some(id.clone()),
 
-        match self.data.as_ref() {
-            Some(data) => return data["id"].as_str(),
-            None => (),
-        };
-
-        return None;
+            // If none, try to get id from body
+            None => {
+                match self.data {
+                    Some(ref data) => data["id"].as_str().map(|s| s.to_string()),
+                    None => None,
+                }
+            }
+        }
     }
 
     fn get_timestamp(&self) -> Option<u64> {
@@ -119,12 +119,12 @@ impl Resource for Collection {
     }
 
     fn get_data(&self) -> Option<Value> {
-        return self.data.clone();
+        self.data.clone()
     }
 
     fn set_data(&mut self, data: Value) -> Self {
         self.data = data.into();
-        return self.clone();
+        self.clone()
     }
 
     fn get_permissions(&self) -> Option<Value> {
@@ -253,8 +253,8 @@ mod test_collection {
             .limit(3)
             .follow_subrequests()
             .unwrap();
-        let records: Vec<Record> = unwrap_collection_records(response,
-                                                             collection.new_record());
+        let records: Vec<Record> = unwrap_collection_records(&response,
+                                                             &collection.new_record());
         assert_eq!(records.len(), 10);
     }
 

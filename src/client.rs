@@ -68,7 +68,7 @@ impl KintoClient {
     /// List the names of all available buckets.
     pub fn list_buckets(&self) -> Result<Vec<Bucket>, KintoError> {
         let response = try!(try!(self.new_bucket().list_request()).follow_subrequests());
-        return Ok(unwrap_collection_records(response, self.new_bucket()));
+        Ok(unwrap_collection_records(&response, &self.new_bucket()))
     }
 
     /// Delete all available buckets.

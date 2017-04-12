@@ -38,7 +38,7 @@ fn main() {
 
 
     // Get the created record by id
-    let mut load_bucket = pub_client.bucket(new_bucket.get_id().unwrap());
+    let mut load_bucket = pub_client.bucket(&new_bucket.get_id().unwrap());
 
 
     // Get the record from the server or panic if fails

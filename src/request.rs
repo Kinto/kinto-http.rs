@@ -65,7 +65,7 @@ pub trait KintoRequest: Clone {
                                 preparer.config.server_url,
                                 preparer.path);
 
-        if preparer.query.len() > 0 {
+        if !preparer.query.is_empty() {
             full_path = format!("{}?{}", full_path, preparer.query);
         }
 
@@ -121,7 +121,7 @@ pub trait KintoRequest: Clone {
             body: body,
         };
 
-        return Ok(response);
+        Ok(response)
     }
 
     fn follow_subrequests(&mut self) -> Result<ResponseWrapper, KintoError> {

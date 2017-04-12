@@ -28,7 +28,7 @@ pub struct Record {
 
 impl Record {
     /// Create a new record object without an id.
-    pub fn new<'c>(collection: Collection) -> Self {
+    pub fn new(collection: Collection) -> Self {
         Record {
             collection: collection.clone(),
             data: None,
@@ -66,12 +66,12 @@ impl Resource for Record {
     }
 
     fn get_data(&self) -> Option<Value> {
-        return self.data.clone();
+        self.data.clone()
     }
 
     fn set_data(&mut self, data: Value) -> Self {
         self.data = data.into();
-        return self.clone();
+        self.clone()
     }
 
     fn get_permissions(&self) -> Option<Value> {
@@ -80,18 +80,18 @@ impl Resource for Record {
             .into()
     }
 
-    fn get_id(&self) -> Option<&str> {
-        match self.id.as_ref() {
-            Some(id) => return Some(id),
-            None => (),
-        };
+    fn get_id(&self) -> Option<String> {
+        match self.id {
+            Some(ref id) => Some(id.clone()),
 
-        match self.data.as_ref() {
-            Some(data) => return data["id"].as_str(),
-            None => (),
-        };
-
-        return None;
+            // If none, try to get id from body
+            None => {
+                match self.data {
+                    Some(ref data) => data["id"].as_str().map(|s| s.to_string()),
+                    None => None,
+                }
+            }
+        }
     }
 
     fn get_timestamp(&self) -> Option<u64> {

@@ -18,8 +18,8 @@ pub enum Paths<'a> {
 impl<'a> Into<String> for Paths<'a> {
     fn into(self) -> String {
         match self {
-            Paths::Batch => format!("/batch"),
-            Paths::Buckets => format!("/buckets"),
+            Paths::Batch => "/batch".to_owned(),
+            Paths::Buckets => "/buckets".to_owned(),
             Paths::Bucket(id) => format!("/buckets/{id}", id = id),
             Paths::Groups(bucket_id) => {
                 format!("/buckets/{bucket_id}/groups", bucket_id = bucket_id)

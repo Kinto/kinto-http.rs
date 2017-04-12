@@ -55,19 +55,19 @@ impl Bucket {
 
     /// Get a collection by id.
     pub fn collection(self, id: &str) -> Collection {
-        return Collection::new_by_id(self, id);
+        Collection::new_by_id(self, id)
     }
 
     /// Get an empty collection.
     pub fn new_collection(&self) -> Collection {
-        return Collection::new(self.clone());
+        Collection::new(self.clone())
     }
 
     /// List the names of all available collections.
     pub fn list_collections(&self) -> Result<Vec<Collection>, KintoError> {
         let response =
             try!(try!(self.new_collection().list_request()).follow_subrequests());
-        return Ok(unwrap_collection_records(response, self.new_collection()));
+        Ok(unwrap_collection_records(&response, &self.new_collection()))
     }
 
     /// Delete all available collections.
@@ -80,7 +80,7 @@ impl Bucket {
 
 impl Resource for Bucket {
     fn resource_path(&self) -> Result<String, KintoError> {
-        Ok(format!("/buckets"))
+        Ok("/buckets".to_owned())
     }
 
     fn unwrap_response(&mut self, wrapper: ResponseWrapper) {
@@ -90,15 +90,15 @@ impl Resource for Bucket {
         self.id = Some(wrapper.body["data"]["id"].as_str().unwrap().to_owned());
     }
 
-    fn get_id(&self) -> Option<&str> {
+    fn get_id(&self) -> Option<String> {
         // Try to get id from class
-        match self.id.as_ref() {
-            Some(id) => Some(id),
+        match self.id {
+            Some(ref id) => Some(id.clone()),
 
             // If none, try to get id from body
             None => {
-                match self.data.as_ref() {
-                    Some(data) => data["id"].as_str(),
+                match self.data {
+                    Some(ref data) => data["id"].as_str().map(|s| s.to_string()),
                     None => None,
                 }
             }
@@ -118,12 +118,12 @@ impl Resource for Bucket {
     }
 
     fn get_data(&self) -> Option<Value> {
-        return self.data.clone();
+        self.data.clone()
     }
 
     fn set_data(&mut self, data: Value) -> Self {
         self.data = data.into();
-        return self.clone();
+        self.clone()
     }
 
     fn get_permissions(&self) -> Option<Value> {

@@ -23,7 +23,7 @@ fn main() {
     let client = KintoClient::new(KintoConfig::new(server_url.to_owned(), auth.into()));
 
     // Pick a new record using the default bucket
-    let ref mut new_record = client
+    let mut new_record = client
         .bucket("default")
         .collection("notes")
         .new_record();
@@ -38,7 +38,7 @@ fn main() {
     let mut get_record = client
         .bucket("default")
         .collection("notes")
-        .record(new_record.get_id().unwrap());
+        .record(&new_record.get_id().unwrap());
 
     // Get the record from the server or panic if fails
     get_record.load().unwrap();

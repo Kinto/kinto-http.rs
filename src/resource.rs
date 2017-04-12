@@ -37,7 +37,7 @@ pub trait Resource: Clone {
     fn get_permissions(&self) -> Option<Value>;
 
     /// Return the object unique id.
-    fn get_id(&self) -> Option<&str>;
+    fn get_id(&self) -> Option<String>;
 
     /// Return the object version timestamp.
     fn get_timestamp(&self) -> Option<u64>;
@@ -68,16 +68,13 @@ pub trait Resource: Clone {
             }
         };
 
-        match self.get_permissions() {
-            Some(perms) => {
-                if perms != json!({}) {
-                    body["permissions"] = perms;
-                }
+        if let Some(perms) = self.get_permissions() {
+            if perms != json!({}) {
+                body["permissions"] = perms;
             }
-            None => (),
-        };
+        }
 
-        return body;
+        body
     }
 
     /// create a custom load (GET) request for the endpoint.
