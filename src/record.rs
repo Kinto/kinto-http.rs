@@ -75,7 +75,9 @@ impl Resource for Record {
     }
 
     fn get_permissions(&self) -> Option<Value> {
-        serde_json::to_value(&(self.permissions)).unwrap_or_default().into()
+        serde_json::to_value(&(self.permissions))
+            .unwrap_or_default()
+            .into()
     }
 
     fn get_id(&self) -> Option<&str> {

@@ -99,10 +99,10 @@ pub mod tests {
     pub fn setup_record() -> Record {
         let client = setup_client();
         client.bucket("food").set().unwrap();
-        client.bucket("food")
-            .collection("meat")
-            .set()
-            .unwrap();
-        return client.bucket("food").collection("meat").record("entrecote");
+        client.bucket("food").collection("meat").set().unwrap();
+        return client
+                   .bucket("food")
+                   .collection("meat")
+                   .record("entrecote");
     }
 }

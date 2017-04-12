@@ -23,7 +23,10 @@ fn main() {
     let client = KintoClient::new(KintoConfig::new(server_url.to_owned(), auth.into()));
 
     // Pick a new record using the default bucket
-    let ref mut new_record = client.bucket("default").collection("notes").new_record();
+    let ref mut new_record = client
+        .bucket("default")
+        .collection("notes")
+        .new_record();
 
     // Set some stuff
     new_record.data = Some(json!({"title": "Hello World"}));
@@ -32,8 +35,10 @@ fn main() {
     new_record.set().unwrap();
 
     // Get the created record by id
-    let mut get_record =
-        client.bucket("default").collection("notes").record(new_record.get_id().unwrap());
+    let mut get_record = client
+        .bucket("default")
+        .collection("notes")
+        .record(new_record.get_id().unwrap());
 
     // Get the record from the server or panic if fails
     get_record.load().unwrap();

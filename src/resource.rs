@@ -126,11 +126,12 @@ pub trait Resource: Clone {
             return self.create();
         }
 
-        let wrapper =
-            match try!(self.update_request()).body(self.get_body().into()).send() {
-                Ok(wrapper) => wrapper,
-                Err(value) => return Err(value),
-            };
+        let wrapper = match try!(self.update_request())
+                  .body(self.get_body().into())
+                  .send() {
+            Ok(wrapper) => wrapper,
+            Err(value) => return Err(value),
+        };
         self.unwrap_response(wrapper);
         Ok(())
     }

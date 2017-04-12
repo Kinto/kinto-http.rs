@@ -128,7 +128,9 @@ impl Resource for Collection {
     }
 
     fn get_permissions(&self) -> Option<Value> {
-        serde_json::to_value(&(self.permissions)).unwrap_or_default().into()
+        serde_json::to_value(&(self.permissions))
+            .unwrap_or_default()
+            .into()
     }
 }
 
@@ -245,7 +247,8 @@ mod test_collection {
         }
 
         let resource = Record::new(collection.clone());
-        let response = resource.list_request()
+        let response = resource
+            .list_request()
             .unwrap()
             .limit(3)
             .follow_subrequests()
@@ -276,7 +279,8 @@ mod test_collection {
         }
 
         let resource = Record::new(collection.clone());
-        resource.delete_all_request()
+        resource
+            .delete_all_request()
             .unwrap()
             .limit(5)
             .follow_subrequests()

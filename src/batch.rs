@@ -81,7 +81,8 @@ impl From<ResponseWrapper> for BatchResponseWrapper {
     fn from(batch_wrapper: ResponseWrapper) -> Self {
         let mut responses = vec![];
 
-        for resp in batch_wrapper.body
+        for resp in batch_wrapper
+                .body
                 .get("responses")
                 .unwrap()
                 .as_array()

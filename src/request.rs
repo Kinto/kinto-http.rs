@@ -82,7 +82,8 @@ pub trait KintoRequest: Clone {
         };
 
         // Send prepared request
-        let response = preparer.config
+        let response = preparer
+            .config
             .http_client()
             .request(preparer.method.to_owned(), &full_path)
             .headers(headers)
@@ -143,8 +144,9 @@ pub trait KintoRequest: Clone {
 
             // Remove client prefix
             temp_request.preparer().path =
-                next_page_url.as_str().replace(base_response.config.server_url.as_str(),
-                                               "");
+                next_page_url
+                    .as_str()
+                    .replace(base_response.config.server_url.as_str(), "");
             temp_request.preparer().query = "".to_owned();
 
             current_response = try!(temp_request.send());
