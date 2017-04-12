@@ -22,6 +22,7 @@ pub mod utils;
 
 pub use error::KintoError;
 pub use client::KintoClient;
+pub use client::KintoConfig;
 
 pub use bucket::Bucket;
 pub use collection::Collection;

@@ -1,7 +1,7 @@
 use serde_json;
 use serde_json::Value;
 
-use KintoClient;
+use KintoConfig;
 use error::KintoError;
 use response::ResponseWrapper;
 use resource::Resource;
@@ -17,7 +17,7 @@ pub struct RecordPermissions {
 }
 
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Record {
     pub data: Option<Value>,
     pub permissions: RecordPermissions,
@@ -61,8 +61,8 @@ impl Resource for Record {
         self.id = Some(wrapper.body["data"]["id"].as_str().unwrap().to_owned());
     }
 
-    fn get_client(&self) -> KintoClient {
-        self.collection.get_client()
+    fn get_config(&self) -> KintoConfig {
+        self.collection.get_config()
     }
 
     fn get_data(&self) -> Option<Value> {

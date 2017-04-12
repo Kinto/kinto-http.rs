@@ -57,14 +57,14 @@ pub mod tests {
     use hyper::header::{Authorization, Basic};
 
     use KintoClient;
+    use KintoConfig;
     use resource::Resource;
     use bucket::Bucket;
     use collection::Collection;
     use record::Record;
 
-
-    /// Create a client and clean the server.
-    pub fn setup_client() -> KintoClient {
+    /// Create a config.
+    pub fn setup_config() -> KintoConfig {
         //let server_url = "https://kinto.dev.mozaws.net/v1".to_owned();
         let server_url = "http://localhost:8888/v1".to_owned();
 
@@ -72,9 +72,14 @@ pub mod tests {
                                      username: "a".to_owned(),
                                      password: Some("a".to_owned()),
                                  });
-        let client = KintoClient::new(server_url, auth.into());
+        KintoConfig::new(server_url, auth.into())
+    }
+
+    /// Create a client and clean the server.
+    pub fn setup_client() -> KintoClient {
+        let client = KintoClient::new(setup_config());
         client.flush().unwrap();
-        return client;
+        client
     }
 
 

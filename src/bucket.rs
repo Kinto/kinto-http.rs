@@ -1,7 +1,7 @@
 use serde_json;
 use serde_json::Value;
 
-use KintoClient;
+use KintoConfig;
 use error::KintoError;
 use request::KintoRequest;
 use response::ResponseWrapper;
@@ -24,29 +24,29 @@ pub struct BucketPermissions {
 }
 
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Bucket {
     pub data: Option<Value>,
     pub permissions: BucketPermissions,
-    pub client: KintoClient,
     pub id: Option<String>,
+    pub config: KintoConfig,
 }
 
 
 impl Bucket {
     /// Create a new bucket resource.
-    pub fn new(client: KintoClient) -> Self {
+    pub fn new(config: KintoConfig) -> Self {
         Bucket {
-            client: client,
+            config: config,
             data: None,
             permissions: BucketPermissions::default(),
             id: None,
         }
     }
 
-    pub fn new_by_id<'a>(client: KintoClient, id: &'a str) -> Self {
+    pub fn new_by_id<'a>(config: KintoConfig, id: &'a str) -> Self {
         Bucket {
-            client: client,
+            config: config,
             data: None,
             permissions: BucketPermissions::default(),
             id: Some(id.to_owned()),
@@ -90,10 +90,6 @@ impl Resource for Bucket {
         self.id = Some(wrapper.body["data"]["id"].as_str().unwrap().to_owned());
     }
 
-    fn get_client(&self) -> KintoClient {
-        self.client.clone()
-    }
-
     fn get_id(&self) -> Option<&str> {
         // Try to get id from class
         match self.id.as_ref() {
@@ -132,6 +128,10 @@ impl Resource for Bucket {
 
     fn get_permissions(&self) -> Option<Value> {
         serde_json::to_value(&(self.permissions)).unwrap_or_default().into()
+    }
+
+    fn get_config(&self) -> KintoConfig {
+        self.config.clone()
     }
 }
 

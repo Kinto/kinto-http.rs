@@ -3,7 +3,7 @@ use hyper::header::{Headers, ContentType};
 use hyper::status::StatusCode;
 use serde_json::map::Map;
 
-use KintoClient;
+use KintoConfig;
 use paths::Paths;
 use request::{RequestPreparer, KintoRequest};
 use response::ResponseWrapper;
@@ -17,8 +17,8 @@ pub struct BatchRequest {
 
 
 impl BatchRequest {
-    pub fn new(client: KintoClient) -> BatchRequest {
-        let mut preparer = RequestPreparer::new(client, Paths::Batch.into());
+    pub fn new(config: KintoConfig) -> BatchRequest {
+        let mut preparer = RequestPreparer::new(config, Paths::Batch.into());
         preparer.method = Method::Post;
         preparer.headers.set(ContentType::json());
         BatchRequest {
@@ -70,7 +70,7 @@ impl KintoRequest for BatchRequest {
 
 #[derive(Debug, Clone)]
 pub struct BatchResponseWrapper {
-    pub client: KintoClient,
+    pub config: KintoConfig,
     pub status: StatusCode,
     pub headers: Headers,
     pub responses: Vec<ResponseWrapper>,
@@ -87,7 +87,7 @@ impl From<ResponseWrapper> for BatchResponseWrapper {
                 .as_array()
                 .unwrap() {
             let wrapper = ResponseWrapper {
-                client: batch_wrapper.client.clone(),
+                config: batch_wrapper.config.clone(),
                 // XXX: Unwrap headers
                 headers: Headers::new(),
                 body: resp.get("body").unwrap().clone(),
@@ -108,9 +108,9 @@ impl From<ResponseWrapper> for BatchResponseWrapper {
         }
 
         BatchResponseWrapper {
-            client: batch_wrapper.client.clone(),
-            status: batch_wrapper.status.clone(),
-            headers: batch_wrapper.headers.clone(),
+            config: batch_wrapper.config,
+            status: batch_wrapper.status,
+            headers: batch_wrapper.headers,
             responses: responses,
         }
     }
@@ -126,13 +126,13 @@ mod test_record {
     use batch::{BatchRequest, BatchResponseWrapper};
     use request::KintoRequest;
     use resource::Resource;
-    use utils::tests::{setup_client, setup_bucket};
+    use utils::tests::{setup_config, setup_bucket};
 
     #[test]
     fn test_create_batch() {
-        let client = setup_client();
+        let config = setup_config();
         let bucket = setup_bucket();
-        let mut batch = BatchRequest::new(client);
+        let mut batch = BatchRequest::new(config);
         batch.add_request(bucket.update_request().unwrap());
         let result: BatchResponseWrapper = batch.send().unwrap().into();
         assert_eq!(result.responses.len(), 1);
@@ -143,9 +143,9 @@ mod test_record {
 
     #[test]
     fn test_add_batch_preserves_order() {
-        let client = setup_client();
+        let config = setup_config();
         let bucket = setup_bucket();
-        let mut batch = BatchRequest::new(client);
+        let mut batch = BatchRequest::new(config);
         batch.add_request(bucket.update_request().unwrap());
         batch.add_request(bucket.delete_request().unwrap());
         let result: BatchResponseWrapper = batch.send().unwrap().into();

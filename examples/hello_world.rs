@@ -5,7 +5,7 @@ extern crate serde_json;
 
 
 use hyper::header::{Authorization, Basic};
-use kinto_http::{KintoClient, Resource};
+use kinto_http::{KintoClient, KintoConfig, Resource};
 use serde_json::to_string_pretty;
 
 
@@ -20,7 +20,7 @@ fn main() {
                              });
 
     // Create a client.
-    let client = KintoClient::new(server_url.to_owned(), auth.into());
+    let client = KintoClient::new(KintoConfig::new(server_url.to_owned(), auth.into()));
 
     // Pick a new record using the default bucket
     let ref mut new_record = client.bucket("default").collection("notes").new_record();

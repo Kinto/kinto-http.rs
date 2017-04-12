@@ -1,7 +1,7 @@
 use serde_json::Value;
 use hyper::header::{IfMatch, IfNoneMatch};
 
-use client::KintoClient;
+use client::KintoConfig;
 use error::KintoError;
 use request::{GetRecord, CreateRecord, UpdateRecord, DeleteRecord, GetCollection,
               DeleteCollection, KintoRequest, PayloadedEndpoint};
@@ -25,8 +25,8 @@ pub trait Resource: Clone {
     /// Unwrap a request response and update the current object.
     fn unwrap_response(&mut self, wrapper: ResponseWrapper);
 
-    /// Get the client for the given resource.
-    fn get_client(&self) -> KintoClient;
+    /// Get the config for the given resource.
+    fn get_config(&self) -> KintoConfig;
 
     /// Get the record data.
     fn get_data(&self) -> Option<Value>;
@@ -82,32 +82,32 @@ pub trait Resource: Clone {
 
     /// create a custom load (GET) request for the endpoint.
     fn load_request(&self) -> Result<GetRecord, KintoError> {
-        Ok(GetRecord::new(self.get_client(), try!(self.record_path())))
+        Ok(GetRecord::new(self.get_config(), try!(self.record_path())))
     }
 
     /// create a custom create (POST) request for the endpoint.
     fn create_request(&self) -> Result<CreateRecord, KintoError> {
-        Ok(CreateRecord::new(self.get_client(), try!(self.resource_path())))
+        Ok(CreateRecord::new(self.get_config(), try!(self.resource_path())))
     }
 
     /// Create a custom update (PUT) request for the endpoint.
     fn update_request(&self) -> Result<UpdateRecord, KintoError> {
-        Ok(UpdateRecord::new(self.get_client(), try!(self.record_path())))
+        Ok(UpdateRecord::new(self.get_config(), try!(self.record_path())))
     }
 
     /// Create a custom delete request for the endpoint.
     fn delete_request(&self) -> Result<DeleteRecord, KintoError> {
-        Ok(DeleteRecord::new(self.get_client(), try!(self.record_path())))
+        Ok(DeleteRecord::new(self.get_config(), try!(self.record_path())))
     }
 
     /// Create a custom list collections request.
     fn list_request(&self) -> Result<GetCollection, KintoError> {
-        Ok(GetCollection::new(self.get_client(), try!(self.resource_path())))
+        Ok(GetCollection::new(self.get_config(), try!(self.resource_path())))
     }
 
     /// Create a custom delete collections request.
     fn delete_all_request(&self) -> Result<DeleteCollection, KintoError> {
-        Ok(DeleteCollection::new(self.get_client(), try!(self.resource_path())))
+        Ok(DeleteCollection::new(self.get_config(), try!(self.resource_path())))
     }
 
     /// Load bucket by id if exists.

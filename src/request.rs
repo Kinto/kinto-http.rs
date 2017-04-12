@@ -7,7 +7,7 @@ use hyper::method::Method;
 use hyper::header::{Headers, ContentType, IfMatch, IfNoneMatch};
 use hyper::status::StatusCode;
 
-use KintoClient;
+use KintoConfig;
 use error::KintoError;
 use response::ResponseWrapper;
 
@@ -15,7 +15,7 @@ use response::ResponseWrapper;
 /// Request builder used for setting data by specialized request methods.
 #[derive(Debug, Clone)]
 pub struct RequestPreparer {
-    pub client: KintoClient,
+    pub config: KintoConfig,
     pub method: Method,
     pub path: String,
     pub headers: Headers,
@@ -26,9 +26,9 @@ pub struct RequestPreparer {
 
 /// Base request data used by specialized request methods
 impl RequestPreparer {
-    pub fn new(client: KintoClient, path: String) -> RequestPreparer {
+    pub fn new(config: KintoConfig, path: String) -> RequestPreparer {
         RequestPreparer {
-            client: client,
+            config: config,
             method: Method::Get,
             path: path,
             headers: Headers::new(),
@@ -62,7 +62,7 @@ pub trait KintoRequest: Clone {
         let preparer = self.preparer();
 
         let mut full_path = format!("{}{}",
-                                preparer.client.server_url,
+                                preparer.config.server_url,
                                 preparer.path);
 
         if preparer.query.len() > 0 {
@@ -72,10 +72,9 @@ pub trait KintoRequest: Clone {
         let mut headers = preparer.headers.to_owned();
 
         // Set authentication headers
-        match preparer.client.auth.to_owned() {
-            Some(method) => headers.set(method),
-            None => (),
-        };
+        if let Some(ref method) = preparer.config.auth {
+            headers.set(method.clone());
+        }
 
         let payload = match preparer.body.clone() {
             Some(body) => serde_json::to_string(&body).unwrap(),
@@ -83,8 +82,8 @@ pub trait KintoRequest: Clone {
         };
 
         // Send prepared request
-        let response = preparer.client
-            .http_client
+        let response = preparer.config
+            .http_client()
             .request(preparer.method.to_owned(), &full_path)
             .headers(headers)
             .body(payload.as_str())
@@ -114,7 +113,7 @@ pub trait KintoRequest: Clone {
         let body = serde_json::from_str(&serialized).unwrap();
 
         let response = ResponseWrapper {
-            client: preparer.client.to_owned(),
+            config: preparer.config.clone(),
             path: preparer.path.to_owned(),
             status: response.status,
             headers: response.headers.to_owned(),
@@ -144,7 +143,7 @@ pub trait KintoRequest: Clone {
 
             // Remove client prefix
             temp_request.preparer().path =
-                next_page_url.as_str().replace(base_response.client.server_url.as_str(),
+                next_page_url.as_str().replace(base_response.config.server_url.as_str(),
                                                "");
             temp_request.preparer().query = "".to_owned();
 
@@ -183,8 +182,8 @@ pub struct GetCollection {
 }
 
 impl GetCollection {
-    pub fn new(client: KintoClient, path: String) -> GetCollection {
-        let mut preparer = RequestPreparer::new(client, path);
+    pub fn new(config: KintoConfig, path: String) -> GetCollection {
+        let mut preparer = RequestPreparer::new(config, path);
         preparer.method = Method::Get;
         GetCollection { preparer: preparer }
     }
@@ -206,8 +205,8 @@ pub struct DeleteCollection {
 }
 
 impl DeleteCollection {
-    pub fn new(client: KintoClient, path: String) -> DeleteCollection {
-        let mut preparer = RequestPreparer::new(client, path);
+    pub fn new(config: KintoConfig, path: String) -> DeleteCollection {
+        let mut preparer = RequestPreparer::new(config, path);
         preparer.method = Method::Delete;
         DeleteCollection { preparer: preparer }
     }
@@ -228,8 +227,8 @@ pub struct CreateRecord {
 }
 
 impl CreateRecord {
-    pub fn new(client: KintoClient, path: String) -> CreateRecord {
-        let mut preparer = RequestPreparer::new(client, path);
+    pub fn new(config: KintoConfig, path: String) -> CreateRecord {
+        let mut preparer = RequestPreparer::new(config, path);
         preparer.method = Method::Post;
         CreateRecord { preparer: preparer }
     }
@@ -251,8 +250,8 @@ pub struct GetRecord {
 }
 
 impl GetRecord {
-    pub fn new(client: KintoClient, path: String) -> GetRecord {
-        let mut preparer = RequestPreparer::new(client, path);
+    pub fn new(config: KintoConfig, path: String) -> GetRecord {
+        let mut preparer = RequestPreparer::new(config, path);
         preparer.method = Method::Get;
         GetRecord { preparer: preparer }
     }
@@ -271,8 +270,8 @@ pub struct UpdateRecord {
 }
 
 impl UpdateRecord {
-    pub fn new(client: KintoClient, path: String) -> UpdateRecord {
-        let mut preparer = RequestPreparer::new(client, path);
+    pub fn new(config: KintoConfig, path: String) -> UpdateRecord {
+        let mut preparer = RequestPreparer::new(config, path);
         preparer.method = Method::Put;
         UpdateRecord { preparer: preparer }
     }
@@ -294,8 +293,8 @@ pub struct PatchRecord {
 }
 
 impl PatchRecord {
-    pub fn new(client: KintoClient, path: String) -> PatchRecord {
-        let mut preparer = RequestPreparer::new(client, path);
+    pub fn new(config: KintoConfig, path: String) -> PatchRecord {
+        let mut preparer = RequestPreparer::new(config, path);
         preparer.method = Method::Patch;
         PatchRecord { preparer: preparer }
     }
@@ -317,8 +316,8 @@ pub struct DeleteRecord {
 }
 
 impl DeleteRecord {
-    pub fn new(client: KintoClient, path: String) -> DeleteRecord {
-        let mut preparer = RequestPreparer::new(client, path);
+    pub fn new(config: KintoConfig, path: String) -> DeleteRecord {
+        let mut preparer = RequestPreparer::new(config, path);
         preparer.method = Method::Delete;
         DeleteRecord { preparer: preparer }
     }
