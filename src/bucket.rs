@@ -148,7 +148,7 @@ mod test_bucket_resource {
     fn test_set_bucket() {
         let mut bucket = setup_bucket();
         bucket.set().unwrap();
-        let data = bucket.data.unwrap().to_owned();
+        let data = bucket.data.unwrap();
         assert_eq!(data["id"], "food");
     }
 
@@ -157,7 +157,7 @@ mod test_bucket_resource {
         let mut bucket = setup_bucket();
         bucket.id = None;
         bucket.set().unwrap();
-        let data = bucket.data.unwrap().to_owned();
+        let data = bucket.data.unwrap();
         assert!(data["id"].as_str() != None);
     }
 
@@ -165,7 +165,7 @@ mod test_bucket_resource {
     fn test_create_bucket() {
         let mut bucket = setup_bucket();
         bucket.create().unwrap();
-        let data = bucket.data.unwrap().to_owned();
+        let data = bucket.data.unwrap();
         assert_eq!(data["id"], "food");
     }
 
@@ -174,7 +174,7 @@ mod test_bucket_resource {
         let mut bucket = setup_bucket();
         bucket.id = None;
         bucket.set().unwrap();
-        let data = bucket.data.unwrap().to_owned();
+        let data = bucket.data.unwrap();
         assert!(data["id"].as_str() != None);
     }
 
@@ -182,7 +182,7 @@ mod test_bucket_resource {
     fn test_load_bucket() {
         let mut bucket = setup_bucket();
         bucket.set().unwrap();
-        let create_data = bucket.data.clone().unwrap();
+        let create_data = bucket.data.unwrap();
 
         // Cleanup stored data to make sure load work
         bucket.data = json!({}).into();
@@ -198,7 +198,7 @@ mod test_bucket_resource {
         let mut bucket = setup_bucket();
         bucket.data = json!({"good": true}).into();
         bucket.create().unwrap();
-        let data = bucket.data.unwrap().to_owned();
+        let data = bucket.data.unwrap();
         assert_eq!(data["good"].as_bool().unwrap(), true);
     }
 
