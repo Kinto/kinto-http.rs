@@ -137,16 +137,14 @@ pub trait KintoRequest: Clone {
             };
 
             // Gets nets page string
-            let next_page_url = try!(str::from_utf8(page_header.as_slice())).to_owned();
+            let next_page_url = try!(str::from_utf8(page_header.as_slice()));
 
             // Repeated request on the provided endpoint
             let mut temp_request = self.clone();
 
             // Remove client prefix
             temp_request.preparer().path =
-                next_page_url
-                    .as_str()
-                    .replace(base_response.config.server_url.as_str(), "");
+                next_page_url.replace(base_response.config.server_url.as_str(), "");
             temp_request.preparer().query = "".to_owned();
 
             current_response = try!(temp_request.send());

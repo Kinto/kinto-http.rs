@@ -38,7 +38,7 @@ impl Record {
     }
 
     /// Create a new record object with an id.
-    pub fn new_by_id<'a>(collection: Collection, id: &'a str) -> Self {
+    pub fn new_by_id(collection: Collection, id: &str) -> Self {
         Record {
             collection: collection,
             data: None,

@@ -43,7 +43,7 @@ impl Collection {
     }
 
     /// Create a new collection resource.
-    pub fn new_by_id<'a>(bucket: Bucket, id: &'a str) -> Self {
+    pub fn new_by_id(bucket: Bucket, id: &str) -> Self {
         Collection {
             bucket: bucket,
             id: Some(id.to_owned()),
@@ -52,7 +52,7 @@ impl Collection {
         }
     }
 
-    pub fn record<'a>(&self, id: &'a str) -> Record {
+    pub fn record(&self, id: &str) -> Record {
         return Record::new_by_id(self.clone(), id);
     }
 

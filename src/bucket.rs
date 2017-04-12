@@ -44,7 +44,7 @@ impl Bucket {
         }
     }
 
-    pub fn new_by_id<'a>(config: KintoConfig, id: &'a str) -> Self {
+    pub fn new_by_id(config: KintoConfig, id: &str) -> Self {
         Bucket {
             config: config,
             data: None,
@@ -54,7 +54,7 @@ impl Bucket {
     }
 
     /// Get a collection by id.
-    pub fn collection<'a>(self, id: &'a str) -> Collection {
+    pub fn collection(self, id: &str) -> Collection {
         return Collection::new_by_id(self, id);
     }
 
