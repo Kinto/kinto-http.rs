@@ -10,50 +10,65 @@ use bucket::Bucket;
 
 use utils::unwrap_collection_records;
 
-
-/// Client for the Kinto HTTP API.
-#[derive(Debug)]
-pub struct KintoClient {
+/// Configuration of the Kinto endpoint.
+#[derive(Debug, Clone)]
+pub struct KintoConfig {
     pub server_url: String,
-    pub http_client: client::Client,
     pub auth: Option<Authorization<Basic>>,
 }
 
+impl KintoConfig {
+    pub fn new(server_url: String, auth: Option<Authorization<Basic>>) -> KintoConfig {
+        KintoConfig {
+            server_url: server_url,
+            auth: auth,
+        }
+    }
 
-impl KintoClient {
-    /// Create a client.
-    pub fn new(server_url: String, auth: Option<Authorization<Basic>>) -> KintoClient {
-
+    pub fn http_client(&self) -> client::Client {
         // Build an SSL connector
         let ssl = NativeTlsClient::new().unwrap();
         let connector = HttpsConnector::new(ssl);
 
         // Build a HTTP Client with TLS support.
-        let client = client::Client::with_connector(connector);
+        client::Client::with_connector(connector)
+    }
+}
+
+/// Client for the Kinto HTTP API.
+#[derive(Debug)]
+pub struct KintoClient {
+    pub http_client: client::Client,
+    config: KintoConfig,
+}
+
+
+impl KintoClient {
+    /// Create a client.
+    pub fn new(config: KintoConfig) -> KintoClient {
 
         KintoClient {
-            server_url: server_url,
-            http_client: client,
-            auth: auth,
+            config: config.clone(),
+            http_client: config.http_client(),
         }
     }
 
     /// Select an existing bucket.
-    pub fn bucket<'a>(&self, id: &'a str) -> Bucket {
+    pub fn bucket(&self, id: &str) -> Bucket {
         // XXX: Cloning prevents move, but there should be a better way to
         // handle this. Using references maybe?
-        Bucket::new_by_id(self.clone(), id)
+        Bucket::new_by_id(self.config.clone(), id)
     }
 
     /// Create a new empty bucket with a generated id.
     pub fn new_bucket(&self) -> Bucket {
-        Bucket::new(self.clone())
+        Bucket::new(self.config.clone())
     }
 
     /// List the names of all available buckets.
     pub fn list_buckets(&self) -> Result<Vec<Bucket>, KintoError> {
         let response = try!(try!(self.new_bucket().list_request()).follow_subrequests());
-        return Ok(unwrap_collection_records(response, self.new_bucket()));
+        Ok(unwrap_collection_records(&response, &self.new_bucket()))
     }
 
     /// Delete all available buckets.
@@ -64,40 +79,19 @@ impl KintoClient {
 
     /// Flush the server (if the flush endpoint is enabled).
     pub fn flush(&self) -> Result<(), KintoError> {
-        let path = format!("{}/__flush__", self.server_url);
-
         // Set authentication headers
         let mut headers = Headers::new();
-        match self.auth.to_owned() {
-            Some(method) => headers.set(method),
-            None => (),
-        };
+        if let Some(ref method) = self.config.auth {
+            headers.set(method.clone());
+        }
 
         try!(self.http_client
-                 .post(path.as_str())
+                 .post(&format!("{}/__flush__", self.config.server_url))
                  .headers(headers)
                  .send());
         Ok(())
     }
 }
-
-
-impl Clone for KintoClient {
-    fn clone(&self) -> KintoClient {
-        let new_client = KintoClient::new(self.server_url.to_owned(),
-                                          self.auth.to_owned());
-        return new_client;
-    }
-}
-
-
-impl Default for KintoClient {
-    fn default() -> KintoClient {
-        let new_client = KintoClient::new("".to_owned(), None);
-        return new_client;
-    }
-}
-
 
 #[cfg(test)]
 mod test_client {

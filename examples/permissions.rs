@@ -6,7 +6,7 @@ extern crate serde_json;
 
 
 use hyper::header::{Authorization, Basic};
-use kinto_http::{KintoClient, Resource};
+use kinto_http::{KintoClient, KintoConfig, Resource};
 
 
 fn main() {
@@ -20,7 +20,7 @@ fn main() {
                              });
 
     // Create a client.
-    let client = KintoClient::new(server_url.to_owned(), auth.into());
+    let client = KintoClient::new(KintoConfig::new(server_url.to_owned(), auth.into()));
 
     // Pick a new record using the default bucket
     let mut new_bucket = client.new_bucket();
@@ -34,11 +34,11 @@ fn main() {
     println!("{:?}", new_bucket.permissions);
 
     // Create an unautheticated client.
-    let pub_client = KintoClient::new(server_url.to_owned(), None);
+    let pub_client = KintoClient::new(KintoConfig::new(server_url.to_owned(), None));
 
 
     // Get the created record by id
-    let mut load_bucket = pub_client.bucket(new_bucket.get_id().unwrap());
+    let mut load_bucket = pub_client.bucket(&new_bucket.get_id().unwrap());
 
 
     // Get the record from the server or panic if fails

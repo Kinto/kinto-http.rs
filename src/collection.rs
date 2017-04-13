@@ -1,7 +1,7 @@
 use serde_json;
 use serde_json::Value;
 
-use KintoClient;
+use KintoConfig;
 use error::KintoError;
 use request::KintoRequest;
 use response::ResponseWrapper;
@@ -22,7 +22,7 @@ pub struct CollectionPermissions {
 }
 
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Collection {
     pub data: Option<Value>,
     pub permissions: CollectionPermissions,
@@ -43,7 +43,7 @@ impl Collection {
     }
 
     /// Create a new collection resource.
-    pub fn new_by_id<'a>(bucket: Bucket, id: &'a str) -> Self {
+    pub fn new_by_id(bucket: Bucket, id: &str) -> Self {
         Collection {
             bucket: bucket,
             id: Some(id.to_owned()),
@@ -52,19 +52,19 @@ impl Collection {
         }
     }
 
-    pub fn record<'a>(&self, id: &'a str) -> Record {
-        return Record::new_by_id(self.clone(), id);
+    pub fn record(&self, id: &str) -> Record {
+        Record::new_by_id(self.clone(), id)
     }
 
     /// Create a new empty record with a generated id.
     pub fn new_record(&self) -> Record {
-        return Record::new(self.clone());
+        Record::new(self.clone())
     }
 
     /// List the names of all available records.
     pub fn list_records(&self) -> Result<Vec<Record>, KintoError> {
         let response = try!(try!(self.new_record().list_request()).follow_subrequests());
-        return Ok(unwrap_collection_records(response, self.new_record()));
+        Ok(unwrap_collection_records(&response, &self.new_record()))
     }
 
     /// Delete all available records.
@@ -88,22 +88,22 @@ impl Resource for Collection {
         self.id = Some(wrapper.body["data"]["id"].as_str().unwrap().to_owned());
     }
 
-    fn get_client(&self) -> KintoClient {
-        self.bucket.get_client()
+    fn get_config(&self) -> KintoConfig {
+        self.bucket.get_config()
     }
 
-    fn get_id(&self) -> Option<&str> {
-        match self.id.as_ref() {
-            Some(id) => return Some(id),
-            None => (),
-        };
+    fn get_id(&self) -> Option<String> {
+        match self.id {
+            Some(ref id) => Some(id.clone()),
 
-        match self.data.as_ref() {
-            Some(data) => return data["id"].as_str(),
-            None => (),
-        };
-
-        return None;
+            // If none, try to get id from body
+            None => {
+                match self.data {
+                    Some(ref data) => data["id"].as_str().map(|s| s.to_string()),
+                    None => None,
+                }
+            }
+        }
     }
 
     fn get_timestamp(&self) -> Option<u64> {
@@ -119,16 +119,18 @@ impl Resource for Collection {
     }
 
     fn get_data(&self) -> Option<Value> {
-        return self.data.clone();
+        self.data.clone()
     }
 
     fn set_data(&mut self, data: Value) -> Self {
         self.data = data.into();
-        return self.clone();
+        self.clone()
     }
 
     fn get_permissions(&self) -> Option<Value> {
-        serde_json::to_value(&(self.permissions)).unwrap_or_default().into()
+        serde_json::to_value(&(self.permissions))
+            .unwrap_or_default()
+            .into()
     }
 }
 
@@ -245,13 +247,14 @@ mod test_collection {
         }
 
         let resource = Record::new(collection.clone());
-        let response = resource.list_request()
+        let response = resource
+            .list_request()
             .unwrap()
             .limit(3)
             .follow_subrequests()
             .unwrap();
-        let records: Vec<Record> = unwrap_collection_records(response,
-                                                             collection.new_record());
+        let records: Vec<Record> = unwrap_collection_records(&response,
+                                                             &collection.new_record());
         assert_eq!(records.len(), 10);
     }
 
@@ -276,7 +279,8 @@ mod test_collection {
         }
 
         let resource = Record::new(collection.clone());
-        resource.delete_all_request()
+        resource
+            .delete_all_request()
             .unwrap()
             .limit(5)
             .follow_subrequests()

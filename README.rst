@@ -55,7 +55,7 @@ Running tests
 Run a Kinto server in background::
 
     $ pip install kinto
-    $ kinto start --ini config.ini
+    $ kinto start --ini kinto.ini
 
 Then run the tests using cargo in a single thread::
 

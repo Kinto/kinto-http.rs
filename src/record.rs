@@ -1,7 +1,7 @@
 use serde_json;
 use serde_json::Value;
 
-use KintoClient;
+use KintoConfig;
 use error::KintoError;
 use response::ResponseWrapper;
 use resource::Resource;
@@ -17,7 +17,7 @@ pub struct RecordPermissions {
 }
 
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Record {
     pub data: Option<Value>,
     pub permissions: RecordPermissions,
@@ -28,7 +28,7 @@ pub struct Record {
 
 impl Record {
     /// Create a new record object without an id.
-    pub fn new<'c>(collection: Collection) -> Self {
+    pub fn new(collection: Collection) -> Self {
         Record {
             collection: collection.clone(),
             data: None,
@@ -38,7 +38,7 @@ impl Record {
     }
 
     /// Create a new record object with an id.
-    pub fn new_by_id<'a>(collection: Collection, id: &'a str) -> Self {
+    pub fn new_by_id(collection: Collection, id: &str) -> Self {
         Record {
             collection: collection,
             data: None,
@@ -61,35 +61,37 @@ impl Resource for Record {
         self.id = Some(wrapper.body["data"]["id"].as_str().unwrap().to_owned());
     }
 
-    fn get_client(&self) -> KintoClient {
-        self.collection.get_client()
+    fn get_config(&self) -> KintoConfig {
+        self.collection.get_config()
     }
 
     fn get_data(&self) -> Option<Value> {
-        return self.data.clone();
+        self.data.clone()
     }
 
     fn set_data(&mut self, data: Value) -> Self {
         self.data = data.into();
-        return self.clone();
+        self.clone()
     }
 
     fn get_permissions(&self) -> Option<Value> {
-        serde_json::to_value(&(self.permissions)).unwrap_or_default().into()
+        serde_json::to_value(&(self.permissions))
+            .unwrap_or_default()
+            .into()
     }
 
-    fn get_id(&self) -> Option<&str> {
-        match self.id.as_ref() {
-            Some(id) => return Some(id),
-            None => (),
-        };
+    fn get_id(&self) -> Option<String> {
+        match self.id {
+            Some(ref id) => Some(id.clone()),
 
-        match self.data.as_ref() {
-            Some(data) => return data["id"].as_str(),
-            None => (),
-        };
-
-        return None;
+            // If none, try to get id from body
+            None => {
+                match self.data {
+                    Some(ref data) => data["id"].as_str().map(|s| s.to_string()),
+                    None => None,
+                }
+            }
+        }
     }
 
     fn get_timestamp(&self) -> Option<u64> {

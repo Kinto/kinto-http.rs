@@ -1,7 +1,7 @@
 use serde_json;
 use serde_json::Value;
 
-use KintoClient;
+use KintoConfig;
 use error::KintoError;
 use request::KintoRequest;
 use response::ResponseWrapper;
@@ -24,29 +24,29 @@ pub struct BucketPermissions {
 }
 
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Bucket {
     pub data: Option<Value>,
     pub permissions: BucketPermissions,
-    pub client: KintoClient,
     pub id: Option<String>,
+    pub config: KintoConfig,
 }
 
 
 impl Bucket {
     /// Create a new bucket resource.
-    pub fn new(client: KintoClient) -> Self {
+    pub fn new(config: KintoConfig) -> Self {
         Bucket {
-            client: client,
+            config: config,
             data: None,
             permissions: BucketPermissions::default(),
             id: None,
         }
     }
 
-    pub fn new_by_id<'a>(client: KintoClient, id: &'a str) -> Self {
+    pub fn new_by_id(config: KintoConfig, id: &str) -> Self {
         Bucket {
-            client: client,
+            config: config,
             data: None,
             permissions: BucketPermissions::default(),
             id: Some(id.to_owned()),
@@ -54,20 +54,20 @@ impl Bucket {
     }
 
     /// Get a collection by id.
-    pub fn collection<'a>(self, id: &'a str) -> Collection {
-        return Collection::new_by_id(self, id);
+    pub fn collection(self, id: &str) -> Collection {
+        Collection::new_by_id(self, id)
     }
 
     /// Get an empty collection.
     pub fn new_collection(&self) -> Collection {
-        return Collection::new(self.clone());
+        Collection::new(self.clone())
     }
 
     /// List the names of all available collections.
     pub fn list_collections(&self) -> Result<Vec<Collection>, KintoError> {
         let response =
             try!(try!(self.new_collection().list_request()).follow_subrequests());
-        return Ok(unwrap_collection_records(response, self.new_collection()));
+        Ok(unwrap_collection_records(&response, &self.new_collection()))
     }
 
     /// Delete all available collections.
@@ -80,7 +80,7 @@ impl Bucket {
 
 impl Resource for Bucket {
     fn resource_path(&self) -> Result<String, KintoError> {
-        Ok(format!("/buckets"))
+        Ok("/buckets".to_owned())
     }
 
     fn unwrap_response(&mut self, wrapper: ResponseWrapper) {
@@ -90,19 +90,15 @@ impl Resource for Bucket {
         self.id = Some(wrapper.body["data"]["id"].as_str().unwrap().to_owned());
     }
 
-    fn get_client(&self) -> KintoClient {
-        self.client.clone()
-    }
-
-    fn get_id(&self) -> Option<&str> {
+    fn get_id(&self) -> Option<String> {
         // Try to get id from class
-        match self.id.as_ref() {
-            Some(id) => Some(id),
+        match self.id {
+            Some(ref id) => Some(id.clone()),
 
             // If none, try to get id from body
             None => {
-                match self.data.as_ref() {
-                    Some(data) => data["id"].as_str(),
+                match self.data {
+                    Some(ref data) => data["id"].as_str().map(|s| s.to_string()),
                     None => None,
                 }
             }
@@ -122,16 +118,22 @@ impl Resource for Bucket {
     }
 
     fn get_data(&self) -> Option<Value> {
-        return self.data.clone();
+        self.data.clone()
     }
 
     fn set_data(&mut self, data: Value) -> Self {
         self.data = data.into();
-        return self.clone();
+        self.clone()
     }
 
     fn get_permissions(&self) -> Option<Value> {
-        serde_json::to_value(&(self.permissions)).unwrap_or_default().into()
+        serde_json::to_value(&(self.permissions))
+            .unwrap_or_default()
+            .into()
+    }
+
+    fn get_config(&self) -> KintoConfig {
+        self.config.clone()
     }
 }
 
@@ -146,7 +148,7 @@ mod test_bucket_resource {
     fn test_set_bucket() {
         let mut bucket = setup_bucket();
         bucket.set().unwrap();
-        let data = bucket.data.unwrap().to_owned();
+        let data = bucket.data.unwrap();
         assert_eq!(data["id"], "food");
     }
 
@@ -155,7 +157,7 @@ mod test_bucket_resource {
         let mut bucket = setup_bucket();
         bucket.id = None;
         bucket.set().unwrap();
-        let data = bucket.data.unwrap().to_owned();
+        let data = bucket.data.unwrap();
         assert!(data["id"].as_str() != None);
     }
 
@@ -163,7 +165,7 @@ mod test_bucket_resource {
     fn test_create_bucket() {
         let mut bucket = setup_bucket();
         bucket.create().unwrap();
-        let data = bucket.data.unwrap().to_owned();
+        let data = bucket.data.unwrap();
         assert_eq!(data["id"], "food");
     }
 
@@ -172,7 +174,7 @@ mod test_bucket_resource {
         let mut bucket = setup_bucket();
         bucket.id = None;
         bucket.set().unwrap();
-        let data = bucket.data.unwrap().to_owned();
+        let data = bucket.data.unwrap();
         assert!(data["id"].as_str() != None);
     }
 
@@ -180,7 +182,7 @@ mod test_bucket_resource {
     fn test_load_bucket() {
         let mut bucket = setup_bucket();
         bucket.set().unwrap();
-        let create_data = bucket.data.clone().unwrap();
+        let create_data = bucket.data.unwrap();
 
         // Cleanup stored data to make sure load work
         bucket.data = json!({}).into();
@@ -196,7 +198,7 @@ mod test_bucket_resource {
         let mut bucket = setup_bucket();
         bucket.data = json!({"good": true}).into();
         bucket.create().unwrap();
-        let data = bucket.data.unwrap().to_owned();
+        let data = bucket.data.unwrap();
         assert_eq!(data["good"].as_bool().unwrap(), true);
     }
 

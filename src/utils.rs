@@ -7,7 +7,7 @@ use resource::Resource;
 
 
 /// Get the obkects from a plural endpoint.
-pub fn unwrap_collection_records<T>(wrapper: ResponseWrapper, object: T) -> Vec<T>
+pub fn unwrap_collection_records<T>(wrapper: &ResponseWrapper, object: &T) -> Vec<T>
     where T: Resource
 {
     let mut records = vec![];
@@ -15,25 +15,25 @@ pub fn unwrap_collection_records<T>(wrapper: ResponseWrapper, object: T) -> Vec<
         let record = object.clone().set_data(obj.clone());
         records.push(record);
     }
-    return records;
+    records
 }
 
 
 /// Transform an integer timestamp into an Etag header.
 pub fn timestamp_to_etag(timestamp: u64) -> Vec<EntityTag> {
     let quoted = format!("{}", timestamp);
-    return vec![EntityTag::new(false, quoted)];
+    vec![EntityTag::new(false, quoted)]
 }
 
 
-/// Split a path (e.g. "/buckets/food/collections/foo") into a resource name HashMap.
-pub fn extract_ids_from_path(path: String) -> HashMap<String, Option<String>> {
+/// Split a path (e.g. "/buckets/food/collections/foo") into a resource name `HashMap`.
+pub fn extract_ids_from_path(path: &str) -> HashMap<String, Option<String>> {
 
     // XXX: Remove version from path if exists. We shouldn't hardcode version
     let path = path.replace("/v1", "").to_owned();
 
     // Split path into ["", "buckets", "bucket_id", ...]
-    let mut split = path.split("/");
+    let mut split = path.split('/');
 
     // Remove starting "/"
     split.next().unwrap();
@@ -47,7 +47,7 @@ pub fn extract_ids_from_path(path: String) -> HashMap<String, Option<String>> {
         };
         map.insert(key.to_owned(), value);
     }
-    return map;
+    map
 }
 
 
@@ -57,14 +57,14 @@ pub mod tests {
     use hyper::header::{Authorization, Basic};
 
     use KintoClient;
+    use KintoConfig;
     use resource::Resource;
     use bucket::Bucket;
     use collection::Collection;
     use record::Record;
 
-
-    /// Create a client and clean the server.
-    pub fn setup_client() -> KintoClient {
+    /// Create a config.
+    pub fn setup_config() -> KintoConfig {
         //let server_url = "https://kinto.dev.mozaws.net/v1".to_owned();
         let server_url = "http://localhost:8888/v1".to_owned();
 
@@ -72,9 +72,14 @@ pub mod tests {
                                      username: "a".to_owned(),
                                      password: Some("a".to_owned()),
                                  });
-        let client = KintoClient::new(server_url, auth.into());
+        KintoConfig::new(server_url, auth.into())
+    }
+
+    /// Create a client and clean the server.
+    pub fn setup_client() -> KintoClient {
+        let client = KintoClient::new(setup_config());
         client.flush().unwrap();
-        return client;
+        client
     }
 
 
@@ -94,10 +99,10 @@ pub mod tests {
     pub fn setup_record() -> Record {
         let client = setup_client();
         client.bucket("food").set().unwrap();
-        client.bucket("food")
-            .collection("meat")
-            .set()
-            .unwrap();
-        return client.bucket("food").collection("meat").record("entrecote");
+        client.bucket("food").collection("meat").set().unwrap();
+        return client
+                   .bucket("food")
+                   .collection("meat")
+                   .record("entrecote");
     }
 }
