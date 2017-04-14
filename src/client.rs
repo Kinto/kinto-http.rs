@@ -46,10 +46,10 @@ pub struct KintoClient {
 impl KintoClient {
     /// Create a client.
     pub fn new(config: KintoConfig) -> KintoClient {
-
+        let client = config.http_client();
         KintoClient {
-            config: config.clone(),
-            http_client: config.http_client(),
+            config: config,
+            http_client: client,
         }
     }
 
