@@ -150,7 +150,7 @@ pub trait KintoRequest: Clone {
             current_response = try!(temp_request.send());
 
             // Join data fields
-            let mut base_data = base_response.body["data"].as_array_mut().unwrap();
+            let base_data = base_response.body["data"].as_array_mut().unwrap();
             let new_data = current_response.body["data"].as_array().unwrap();
             base_data.extend(new_data.iter().cloned());
         }
