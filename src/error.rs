@@ -14,34 +14,35 @@ pub enum KintoError {
     UndefinedIdError,
     UnavailableEndpointError,
     HyperError,
-    JsonError,
-    IOError,
+    JsonError(JsonError),
+    Utf8Error(Utf8Error),
+    IOError(IOError),
 }
 
 
 impl From<IOError> for KintoError {
     fn from(err: IOError) -> Self {
-        err.into()
+        KintoError::IOError(err)
     }
 }
 
 
 impl From<Utf8Error> for KintoError {
     fn from(err: Utf8Error) -> Self {
-        err.into()
+        KintoError::Utf8Error(err)
     }
 }
 
 
 impl From<JsonError> for KintoError {
     fn from(err: JsonError) -> Self {
-        err.into()
+        KintoError::JsonError(err)
     }
 }
 
 
 impl From<HyperError> for KintoError {
     fn from(err: HyperError) -> Self {
-        err.into()
+        KintoError::HyperError
     }
 }
